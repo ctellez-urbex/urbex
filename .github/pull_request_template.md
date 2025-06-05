@@ -1,21 +1,21 @@
-## 🚀 Descripción
+## 🚀 Description
 
-Describe brevemente los cambios incluidos en este PR.
+Briefly describe the changes included in this PR.
 
-## 📂 Tipo de cambio
+## 📂 Type of change
 
 - [ ] Feature (`feature/*`)
 - [ ] Fix (`fix/*`)
 - [ ] Hotfix (`hotfix/*`)
-- [ ] Otro
+- [ ] Other
 
 ## ✅ Checklist
 
-- [ ] La rama base es correcta (`developer` o `master`)
-- [ ] El nombre de la rama sigue el patrón correcto
-- [ ] Se pasó CI/CD y linting
-- [ ] La funcionalidad fue revisada por al menos un miembro del equipo
+- [ ] The base branch is correct (`developer` or `master`)
+- [ ] The branch name follows the correct pattern
+- [ ] CI/CD and linting passed
+- [ ] The functionality was reviewed by at least one team member
 
-## 🔍 Contexto adicional
+## 🔍 Additional context
 
-Agrega referencias a issues o tickets, si aplica.
+Add references to issues or tickets, if applicable.
