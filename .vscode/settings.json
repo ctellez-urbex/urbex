@@ -1,0 +1,12 @@
+{
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/awslabs/goformation/master/schema/cloudformation.schema.json": [
+      "infrastructure/*.yaml",
+      "infrastructure/*.yml",
+      "**/cloudformation-template.yaml"
+    ]
+  },
+  "files.associations": {
+    "**/cloudformation-template.yaml": "yaml"
+  }
+} 
