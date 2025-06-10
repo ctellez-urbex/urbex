@@ -18,7 +18,7 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const { theme } = useTheme();
+  const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -96,10 +96,6 @@ export default function Header() {
     }
   };
 
-  if (!mounted) {
-    return null;
-  }
-
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -112,13 +108,23 @@ export default function Header() {
         {/* Logo con animación al hover */}
         <Link href="/" className="flex items-center group">
           <div className="relative w-auto mr-2 transition-transform group-hover:scale-105 duration-300">
-            <Image 
-              src={theme === "dark" ? "/images/urbex-white.svg" : "/images/urbex-logo.svg"} 
-              alt="Urbex Logo" 
-              width={100}
-              height={22}
-              className="w-auto h-8" 
-            />
+            {mounted ? (
+              <Image 
+                src={(theme === "dark" || resolvedTheme === "dark") ? "/images/urbex-white.svg" : "/images/urbex-logo.svg"} 
+                alt="Urbex Logo" 
+                width={100}
+                height={22}
+                className="w-auto h-8" 
+              />
+            ) : (
+              <Image 
+                src="/images/urbex-logo.svg" 
+                alt="Urbex Logo" 
+                width={100}
+                height={22}
+                className="w-auto h-8" 
+              />
+            )}
           </div>
         </Link>
 

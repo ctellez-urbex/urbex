@@ -6,7 +6,7 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 
 export function AuthHeader() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch
@@ -20,13 +20,23 @@ export function AuthHeader() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <Image
-              src={theme === "dark" ? "/images/urbex-white.svg" : "/images/urbex-logo.svg"} 
-              alt="Urbex Logo"
-              width={120}
-              height={40}
-              className="h-8 w-auto"
-            />
+            {mounted ? (
+              <Image
+                src={(theme === "dark" || resolvedTheme === "dark") ? "/images/urbex-white.svg" : "/images/urbex-logo.svg"} 
+                alt="Urbex Logo"
+                width={120}
+                height={40}
+                className="h-8 w-auto"
+              />
+            ) : (
+              <Image
+                src="/images/urbex-logo.svg" 
+                alt="Urbex Logo"
+                width={120}
+                height={40}
+                className="h-8 w-auto"
+              />
+            )}
           </Link>
 
           {/* Navigation and Theme Toggle */}

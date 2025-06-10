@@ -1,10 +1,16 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 
 export default function Team() {
   const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const team = [
     {
@@ -38,13 +44,13 @@ export default function Team() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className={`text-3xl md:text-4xl font-bold mb-6 ${
-            theme === 'dark' ? 'text-white' : 'text-neutral-800'
+            mounted && theme === 'dark' ? 'text-white' : 'text-neutral-800'
           }`}>
             Nuestro Equipo
           </h2>
 
           <p className={`text-lg ${
-            theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+            mounted && theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
           }`}>
             En Urbex, contamos con un equipo multidisciplinario de expertos apasionados por la innovación 
             y el análisis inmobiliario. Nuestra combinación única de experiencia en tecnología, datos y 
@@ -74,17 +80,17 @@ export default function Team() {
               {/* Content */}
               <div className="mt-4 text-center">
                 <h3 className={`text-xl font-semibold mb-1 ${
-                  theme === 'dark' ? 'text-white' : 'text-neutral-800'
+                  mounted && theme === 'dark' ? 'text-white' : 'text-neutral-800'
                 }`}>
                   {member.name}
                 </h3>
                 <p className={`font-medium mb-2 ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  mounted && theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                 }`}>
                   {member.role}
                 </p>
                 <p className={`text-sm ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  mounted && theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                 }`}>
                   {member.description}
                 </p>

@@ -1,176 +1,400 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback, memo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/aws/cognito';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
-export const ForgotPasswordForm = () => {
+interface ForgotPasswordFormData {
+  email: string;
+  code: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+const ForgotPasswordForm = memo(() => {
   const router = useRouter();
   const [step, setStep] = useState<'email' | 'code'>('email');
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ForgotPasswordFormData>({
     email: '',
     code: '',
     newPassword: '',
     confirmPassword: ''
   });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Partial<ForgotPasswordFormData>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  const handleRequestCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      await authService.forgotPassword(formData.email);
-      setStep('code');
-      setMessage('Se ha enviado un código de verificación a tu correo electrónico.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al solicitar el código');
-    } finally {
-      setLoading(false);
+  // Cooldown timer for resend button
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(prev => prev - 1), 1000);
+      return () => clearTimeout(timer);
     }
+  }, [resendCooldown]);
+
+  const validateEmail = useCallback((email: string): string | undefined => {
+    if (!email.trim()) {
+      return 'El correo electrónico es requerido';
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return 'Ingresa un correo electrónico válido';
+    }
+    return undefined;
+  }, []);
+
+  const validatePasswordForm = useCallback((): Partial<ForgotPasswordFormData> => {
+    const newErrors: Partial<ForgotPasswordFormData> = {};
+
+    if (!formData.code.trim()) {
+      newErrors.code = 'El código de verificación es requerido';
+    } else if (!/^\d{6}$/.test(formData.code.trim())) {
+      newErrors.code = 'El código debe tener 6 dígitos';
+    }
+
+    if (!formData.newPassword) {
+      newErrors.newPassword = 'La nueva contraseña es requerida';
+    } else if (formData.newPassword.length < 8) {
+      newErrors.newPassword = 'La contraseña debe tener al menos 8 caracteres';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.newPassword)) {
+      newErrors.newPassword = 'La contraseña debe contener al menos una mayúscula, una minúscula y un número';
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Confirma tu nueva contraseña';
+    } else if (formData.newPassword !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Las contraseñas no coinciden';
+    }
+
+    return newErrors;
+  }, [formData]);
+
+  const handleInputChange = useCallback((field: keyof ForgotPasswordFormData) => 
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = field === 'email' ? e.target.value.toLowerCase().trim() : 
+                   field === 'code' ? e.target.value.replace(/\D/g, '').slice(0, 6) : 
+                   e.target.value;
+      
+      setFormData(prev => ({ ...prev, [field]: value }));
+      
+      // Clear field-specific error when user starts typing
+      if (errors[field]) {
+        setErrors(prev => ({ ...prev, [field]: undefined }));
+      }
+      
+      // Clear general message when user makes changes
+      if (message) {
+        setMessage('');
+      }
+    }, [errors, message]);
+
+  const getErrorMessage = (err: Error): string => {
+    const message = err.message.toLowerCase();
+    if (message.includes('user does not exist') || message.includes('user not found')) {
+      return 'No existe una cuenta con este correo electrónico';
+    }
+    if (message.includes('invalid verification code') || message.includes('code mismatch')) {
+      return 'Código de verificación inválido o expirado';
+    }
+    if (message.includes('attempt limit exceeded')) {
+      return 'Demasiados intentos. Espera antes de intentar de nuevo';
+    }
+    if (message.includes('expired')) {
+      return 'El código ha expirado. Solicita uno nuevo';
+    }
+    return 'Error en el proceso. Por favor, intenta de nuevo';
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleRequestCode = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (formData.newPassword !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden');
+    
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      setErrors({ email: emailError });
       return;
     }
 
     setLoading(true);
+    setErrors({});
 
     try {
-      await authService.resetPassword({
-        email: formData.email,
-        code: formData.code,
-        newPassword: formData.newPassword
-      });
-
-      setMessage('Contraseña actualizada correctamente');
-      setTimeout(() => {
-        router.push('/auth/login');
-      }, 2000);
+      const result = await authService.forgotPassword(formData.email);
+      
+      if (result.success) {
+        setStep('code');
+        setMessage('Se ha enviado un código de verificación a tu correo electrónico. Revisa también tu carpeta de spam.');
+        setResendCooldown(60); // 60 second cooldown
+      } else {
+        setErrors({ email: result.error || 'Error al solicitar el código' });
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al restablecer la contraseña');
+      console.error('Forgot password error:', err);
+      setErrors({ 
+        email: err instanceof Error ? getErrorMessage(err) : 'Error al solicitar el código' 
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData.email, validateEmail]);
 
+  const handleResendCode = useCallback(async () => {
+    if (resendCooldown > 0) return;
+    
+    setLoading(true);
+    setMessage('');
+    setErrors({});
+
+    try {
+      const result = await authService.forgotPassword(formData.email);
+      
+      if (result.success) {
+        setMessage('Código reenviado correctamente');
+        setResendCooldown(60);
+      } else {
+        setErrors({ code: 'Error al reenviar el código' });
+      }
+    } catch (err) {
+      setErrors({ 
+        code: err instanceof Error ? getErrorMessage(err) : 'Error al reenviar el código' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [formData.email, resendCooldown]);
+
+  const handleResetPassword = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const validationErrors = validatePasswordForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setLoading(true);
+    setErrors({});
+
+    try {
+      const result = await authService.resetPassword({
+        email: formData.email,
+        code: formData.code.trim(),
+        newPassword: formData.newPassword
+      });
+
+      if (result.success) {
+        setMessage('¡Contraseña actualizada correctamente! Redirigiendo...');
+        setTimeout(() => {
+          router.push('/auth/login?message=password-reset-success');
+        }, 2000);
+      } else {
+        setErrors({ code: result.error || 'Error al restablecer la contraseña' });
+      }
+    } catch (err) {
+      console.error('Reset password error:', err);
+      setErrors({ 
+        code: err instanceof Error ? getErrorMessage(err) : 'Error al restablecer la contraseña' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [formData, validatePasswordForm, router]);
+
+  // Email step form
   if (step === 'email') {
     return (
-      <form onSubmit={handleRequestCode} className="space-y-6">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Correo electrónico
-          </label>
-          <div className="mt-1">
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Recuperar contraseña
+          </h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Ingresa tu correo electrónico y te enviaremos un código para restablecer tu contraseña
+          </p>
+        </div>
+
+        <form onSubmit={handleRequestCode} className="space-y-4" noValidate>
+          <div>
+            <label 
+              htmlFor="email" 
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Correo electrónico
+            </label>
             <Input
               id="email"
               name="email"
-            type="email"
+              type="email"
               autoComplete="email"
               required
               placeholder="tu@email.com"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              error={error}
+              value={formData.email}
+              onChange={handleInputChange('email')}
+              disabled={loading}
+              error={errors.email}
+              className="w-full"
+            />
+          </div>
+
+          <Button
+            type="submit"
+            disabled={loading || !formData.email}
+            loading={loading}
+            className="w-full"
+          >
+            {loading ? 'Enviando...' : 'Enviar código'}
+          </Button>
+        </form>
+
+        <div className="text-center text-sm">
+          <Link 
+            href="/auth/login" 
+            className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+          >
+            ← Volver al inicio de sesión
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Password reset step form
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Verificar código
+        </h2>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          Ingresa el código de 6 dígitos enviado a <strong>{formData.email}</strong>
+        </p>
+      </div>
+
+      {message && (
+        <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+          <p className="text-sm text-green-600 dark:text-green-400 text-center">
+            {message}
+          </p>
+        </div>
+      )}
+
+      <form onSubmit={handleResetPassword} className="space-y-4" noValidate>
+        <div>
+          <label 
+            htmlFor="code" 
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Código de verificación
+          </label>
+          <Input
+            id="code"
+            name="code"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            required
+            placeholder="123456"
+            value={formData.code}
+            onChange={handleInputChange('code')}
+            disabled={loading}
+            error={errors.code}
+            className="w-full text-center text-2xl tracking-widest"
+            maxLength={6}
           />
+          <div className="mt-2 flex justify-between items-center text-xs">
+            <span className="text-gray-500 dark:text-gray-400">
+              ¿No recibiste el código?
+            </span>
+            <button
+              type="button"
+              onClick={handleResendCode}
+              disabled={loading || resendCooldown > 0}
+              className="text-blue-600 hover:text-blue-500 dark:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : 'Reenviar código'}
+            </button>
           </div>
         </div>
 
         <div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          <label 
+            htmlFor="newPassword" 
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
-            {loading ? 'Enviando...' : 'Enviar código'}
-          </button>
+            Nueva contraseña
+          </label>
+          <Input
+            id="newPassword"
+            name="newPassword"
+            type="password"
+            autoComplete="new-password"
+            required
+            placeholder="••••••••"
+            value={formData.newPassword}
+            onChange={handleInputChange('newPassword')}
+            disabled={loading}
+            error={errors.newPassword}
+            className="w-full"
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Mínimo 8 caracteres, incluye mayúsculas, minúsculas y números
+          </p>
         </div>
-      </form>
-    );
-  }
 
-  return (
-    <form onSubmit={handleResetPassword} className="space-y-6">
-      <div className="space-y-4">
-      <div>
-          <label htmlFor="code" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Código de verificación
-        </label>
-          <div className="mt-1">
-            <Input
-              id="code"
-              name="code"
-          type="text"
-              required
-              placeholder="123456"
-          value={formData.code}
-          onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-        />
-          </div>
-      </div>
-
-      <div>
-          <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Nueva contraseña
-        </label>
-          <div className="mt-1">
-            <Input
-              id="newPassword"
-              name="newPassword"
-          type="password"
-              autoComplete="new-password"
-              required
-              placeholder="••••••••"
-          value={formData.newPassword}
-          onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-        />
-          </div>
-      </div>
-
-      <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Confirmar contraseña
-        </label>
-          <div className="mt-1">
-            <Input
-              id="confirmPassword"
-              name="confirmPassword"
-          type="password"
-              autoComplete="new-password"
-              required
-              placeholder="••••••••"
-          value={formData.confirmPassword}
-          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              error={error}
-        />
-          </div>
+        <div>
+          <label 
+            htmlFor="confirmPassword" 
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Confirmar nueva contraseña
+          </label>
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            required
+            placeholder="••••••••"
+            value={formData.confirmPassword}
+            onChange={handleInputChange('confirmPassword')}
+            disabled={loading}
+            error={errors.confirmPassword}
+            className="w-full"
+          />
         </div>
-      </div>
 
-      {message && (
-        <div className="text-sm text-green-600 dark:text-green-400">
-          {message}
-        </div>
-      )}
-
-      <div>
-        <button
+        <Button
           type="submit"
-          disabled={loading}
-          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          disabled={loading || !formData.code || !formData.newPassword || !formData.confirmPassword}
+          loading={loading}
+          className="w-full"
         >
           {loading ? 'Actualizando...' : 'Actualizar contraseña'}
-        </button>
-      </div>
-    </form>
+        </Button>
+
+        <div className="flex justify-between text-sm">
+          <button
+            type="button"
+            onClick={() => setStep('email')}
+            disabled={loading}
+            className="text-gray-600 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300 disabled:opacity-50"
+          >
+            ← Cambiar correo
+          </button>
+          <Link 
+            href="/auth/login" 
+            className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+          >
+            Cancelar
+          </Link>
+        </div>
+      </form>
+    </div>
   );
-}; 
+});
+
+ForgotPasswordForm.displayName = 'ForgotPasswordForm';
+
+export { ForgotPasswordForm }; 

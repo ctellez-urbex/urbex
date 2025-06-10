@@ -1,29 +1,55 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/aws/cognito';
 import { sessionService } from '@/lib/auth/session';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
+interface LoginFormData {
+  email: string;
+  password: string;
+}
 
-export const LoginForm = () => {
+const LoginForm = memo(() => {
   const router = useRouter();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleInputChange = useCallback((field: keyof LoginFormData) => 
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData(prev => ({ ...prev, [field]: e.target.value }));
+      if (error) setError(''); // Clear error when user starts typing
+    }, [error]);
+
+  const getErrorMessage = (err: Error): string => {
+    const message = err.message.toLowerCase();
+    if (message.includes('user is not confirmed')) {
+      return 'Por favor, verifica tu correo electrónico antes de iniciar sesión';
+    }
+    if (message.includes('incorrect username or password')) {
+      return 'Correo electrónico o contraseña incorrectos';
+    }
+    if (message.includes('user does not exist')) {
+      return 'No existe una cuenta con este correo electrónico';
+    }
+    return 'Error al iniciar sesión. Por favor, intenta de nuevo';
+  };
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
       const result = await authService.signIn({
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password
       });
 
@@ -35,78 +61,94 @@ export const LoginForm = () => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      if (err instanceof Error) {
-        if (err.message.includes('User is not confirmed')) {
-          setError('Por favor, verifica tu correo electrónico antes de iniciar sesión');
-        } else if (err.message.includes('Incorrect username or password')) {
-          setError('Correo electrónico o contraseña incorrectos');
-        } else {
-          setError('Error al iniciar sesión. Por favor, intenta de nuevo');
-        }
-      } else {
-        setError('Error al iniciar sesión. Por favor, intenta de nuevo');
-      }
+      setError(err instanceof Error ? getErrorMessage(err) : 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData, router]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+      {error && (
+        <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+      
       <div className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label 
+            htmlFor="email" 
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Correo electrónico
           </label>
-          <div className="mt-1">
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              placeholder="tu@email.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              error={error}
-            />
-          </div>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            placeholder="tu@email.com"
+            value={formData.email}
+            onChange={handleInputChange('email')}
+            disabled={loading}
+            className="w-full"
+          />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label 
+            htmlFor="password" 
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Contraseña
           </label>
-          <div className="mt-1">
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            />
-          </div>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            placeholder="••••••••"
+            value={formData.password}
+            onChange={handleInputChange('password')}
+            disabled={loading}
+            className="w-full"
+          />
         </div>
       </div>
 
-      <div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-        >
-          {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-        </button>
-      </div>
+      <Button
+        type="submit"
+        disabled={loading || !formData.email || !formData.password}
+        className="w-full"
+        loading={loading}
+      >
+        {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+      </Button>
 
-      <div className="text-sm text-center">
-        <a href="/auth/forgot-password" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+      <div className="text-sm text-center space-y-2">
+        <Link 
+          href="/auth/forgot-password" 
+          className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+        >
           ¿Olvidaste tu contraseña?
-        </a>
+        </Link>
+        <div>
+          <span className="text-gray-600 dark:text-gray-400">¿No tienes una cuenta? </span>
+          <Link 
+            href="/auth/register" 
+            className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+          >
+            Regístrate
+          </Link>
+        </div>
       </div>
     </form>
   );
-}; 
+});
+
+LoginForm.displayName = 'LoginForm';
+
+export { LoginForm }; 

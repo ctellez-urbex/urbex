@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@/lib/aws/cognito';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
-export const VerifyEmailForm = () => {
+const VerifyEmailForm = memo(() => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || '';
@@ -15,98 +17,147 @@ export const VerifyEmailForm = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCodeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ code: e.target.value });
+    if (error) setError('');
+  }, [error]);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setMessage('');
     setLoading(true);
 
     try {
-      await authService.confirmSignUp(email, formData.code);
-      setMessage('Correo electrónico verificado correctamente');
-      setTimeout(() => {
-        router.push('/auth/login');
-      }, 2000);
+      const result = await authService.confirmSignUp(email, formData.code.trim());
+      if (result.success) {
+        setMessage('✅ Correo electrónico verificado correctamente');
+        setTimeout(() => {
+          router.push('/auth/login?verified=true');
+        }, 2000);
+      } else {
+        setError(result.error || 'Error al verificar el correo electrónico');
+      }
     } catch (err) {
+      console.error('Verification error:', err);
       setError(err instanceof Error ? err.message : 'Error al verificar el correo electrónico');
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, formData.code, router]);
 
-  const handleResendCode = async () => {
+  const handleResendCode = useCallback(async () => {
     setError('');
-    setLoading(true);
+    setMessage('');
+    setResendLoading(true);
 
     try {
-      await authService.resendConfirmationCode(email);
-      setMessage('Código de verificación reenviado');
+      const result = await authService.resendConfirmationCode(email);
+      if (result.success) {
+        setMessage('📧 Código de verificación reenviado');
+      } else {
+        setError(result.error || 'Error al reenviar el código');
+      }
     } catch (err) {
+      console.error('Resend error:', err);
       setError(err instanceof Error ? err.message : 'Error al reenviar el código');
     } finally {
-      setLoading(false);
+      setResendLoading(false);
     }
-  };
+  }, [email]);
 
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Verificar correo electrónico
-        </h2>
+        </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          Ingresa el código de verificación enviado a {email}
+          Ingresa el código de verificación enviado a:
+        </p>
+        <p className="font-medium text-blue-600 dark:text-blue-400 text-sm">
+          {email || 'tu correo electrónico'}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+
+      {message && (
+        <div className="p-3 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+          <p className="text-sm text-green-600 dark:text-green-400">{message}</p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         <div>
-          <label htmlFor="code" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+          <label 
+            htmlFor="code" 
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Código de verificación
           </label>
-          <input
-            type="text"
+          <Input
             id="code"
+            name="code"
+            type="text"
+            autoComplete="one-time-code"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={6}
+            placeholder="123456"
             value={formData.code}
-            onChange={(e) => setFormData({ code: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+            onChange={handleCodeChange}
+            disabled={loading || resendLoading}
             required
+            className="text-center text-lg tracking-widest"
           />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Ingresa el código de 6 dígitos
+          </p>
         </div>
 
-        {error && (
-          <div className="text-sm text-red-600 dark:text-red-400">
-            {error}
-          </div>
-        )}
-
-        {message && (
-          <div className="text-sm text-green-600 dark:text-green-400">
-            {message}
-          </div>
-        )}
-
-        <div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Verificando...' : 'Verificar'}
-          </button>
-        </div>
+        <Button
+          type="submit"
+          disabled={loading || resendLoading || !formData.code.trim()}
+          loading={loading}
+          className="w-full"
+        >
+          {loading ? 'Verificando...' : 'Verificar correo'}
+        </Button>
       </form>
 
-      <div className="text-center">
-        <button
+      <div className="text-center space-y-2">
+        <Button
           type="button"
+          variant="ghost"
           onClick={handleResendCode}
-          disabled={loading}
-          className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400"
+          disabled={loading || resendLoading}
+          loading={resendLoading}
+          className="text-sm"
         >
-          ¿No recibiste el código? Reenviar
-        </button>
+          {resendLoading ? 'Reenviando...' : '¿No recibiste el código? Reenviar'}
+        </Button>
+        
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          <p>¿Problemas con la verificación?</p>
+          <a 
+            href="/auth/login" 
+            className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Volver al inicio de sesión
+          </a>
+        </div>
       </div>
     </div>
   );
-}; 
+});
+
+VerifyEmailForm.displayName = 'VerifyEmailForm';
+
+export { VerifyEmailForm }; 
