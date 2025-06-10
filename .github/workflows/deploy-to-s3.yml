@@ -33,4 +33,6 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_USER_POOL_ID: ${{ secrets.AWS_USER_POOL_ID }}
+        AWS_POOL_CLIENT_ID: ${{ secrets.AWS_POOL_CLIENT_ID }}
         SOURCE_DIR: 'out'

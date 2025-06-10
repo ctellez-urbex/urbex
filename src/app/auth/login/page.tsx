@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: 'Iniciar Sesión - Urbex',
   description: 'Inicia sesión en tu cuenta de Urbex para acceder a la información inmobiliaria',
 };
+
 export default function LoginPage() {
   return (
     <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
