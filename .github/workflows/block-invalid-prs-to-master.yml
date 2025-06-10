@@ -1,0 +1,20 @@
+name: Restrict PRs to master
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  validate-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR source branch
+        run: |
+          echo "Source branch is: ${{ github.head_ref }}"
+          if [[ "${{ github.head_ref }}" != "developer" && "${{ github.head_ref }}" != hotfix* ]]; then
+            echo "❌ Pull requests to master are only allowed from 'developer' or 'hotfix/*' branches."
+            exit 1
+          else
+            echo "✅ Pull request source branch is valid."
+          fi

@@ -1,0 +1,37 @@
+{
+  "name": "urbex",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "export": "next build && next export"
+  },
+  "dependencies": {
+    "amazon-cognito-identity-js": "^6.3.15",
+    "aws-amplify": "^6.15.0",
+    "clsx": "^2.1.1",
+    "form-data": "^4.0.2",
+    "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.511.0",
+    "mailgun.js": "^12.0.1",
+    "next": "^15.0.0",
+    "next-themes": "^0.4.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^15.0.0",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3"
+  }
+}
