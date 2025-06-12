@@ -6,9 +6,9 @@ const isBrowser = typeof window !== 'undefined';
 // AWS Cognito configuration
 const getPoolData = () => {
   // During build time or server-side, provide defaults to prevent errors
-  const userPoolId = process.env.AWS_USER_POOL_ID || 'us-east-1_XXXXXXXXX';
-  const clientId = process.env.AWS_POOL_CLIENT_ID || 'XXXXXXXXXXXXXXXXXXXXXXXXXX';
-  const region = process.env.AWS_REGION || 'us-east-1';
+  const userPoolId = process.env.AWS_USER_POOL_ID || 'us-east-2_Fpda5LMX0';
+  const clientId = process.env.AWS_POOL_CLIENT_ID || '5kvmdd29oj2lpnq9b4j60gfe69';
+  const region = process.env.AWS_REGION || 'us-east-2';
 
   return {
     UserPoolId: userPoolId,
@@ -181,15 +181,29 @@ export const authService = {
 
         const cognitoUser = new CognitoUser(userData);
         
-        // Use ALLOW_USER_PASSWORD_AUTH flow
+        // Use ALLOW_USER_PASSWORD_AUTH flow by setting auth flow type
+        cognitoUser.setAuthenticationFlowType('USER_PASSWORD_AUTH');
         cognitoUser.authenticateUser(authenticationDetails, {
           onSuccess: (result) => {
             const token = result.getIdToken().getJwtToken();
+            console.log('✅ Login successful');
             resolve({ success: true, token });
           },
           onFailure: (err: Error) => {
-            console.error('Authentication error:', err);
-            resolve({ success: false, error: err.message });
+            console.error('🔴 Authentication error:', err);
+            console.log('📧 Email used:', email);
+            
+            // Provide more specific error messages
+            let errorMessage = err.message;
+            if (err.message.includes('NotAuthorizedException')) {
+              if (err.message.includes('Incorrect username or password')) {
+                errorMessage = 'Email o contraseña incorrectos. ¿Ya te registraste y confirmaste tu email?';
+              }
+            } else if (err.message.includes('UserNotConfirmedException')) {
+              errorMessage = 'Debes confirmar tu email antes de iniciar sesión. Revisa tu correo.';
+            }
+            
+            resolve({ success: false, error: errorMessage });
           },
           newPasswordRequired: (userAttributes, requiredAttributes) => {
             resolve({ success: false, error: 'Se requiere establecer una nueva contraseña' });
