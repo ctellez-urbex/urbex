@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import { AuthProvider } from "@/contexts/AuthContext";
 import RouteHandler from "@/components/layout/route-handler";
 
 const inter = Inter({ 
@@ -40,7 +41,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange={false}
         >
-          <RouteHandler>{children}</RouteHandler>
+          <AuthProvider>
+            <RouteHandler>{children}</RouteHandler>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
 
 // Definición de enlaces de navegación
 const navLinks = [
@@ -19,10 +20,12 @@ const navLinks = [
 
 export default function Header() {
   const { theme, resolvedTheme } = useTheme();
+  const { user, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("");
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   // After mounting, we have access to the theme
   useEffect(() => setMounted(true), []);

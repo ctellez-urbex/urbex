@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useCallback, memo } from 'react';
-import { useRouter } from 'next/navigation';
-import { authService } from '@/lib/aws/cognito';
-import { sessionService } from '@/lib/auth/session';
+import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -14,7 +12,7 @@ interface LoginFormData {
 }
 
 const LoginForm = memo(() => {
-  const router = useRouter();
+  const { signIn } = useAuth();
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: ''
@@ -28,19 +26,7 @@ const LoginForm = memo(() => {
       if (error) setError(''); // Clear error when user starts typing
     }, [error]);
 
-  const getErrorMessage = (err: Error): string => {
-    const message = err.message.toLowerCase();
-    if (message.includes('user is not confirmed')) {
-      return 'Por favor, verifica tu correo electrónico antes de iniciar sesión';
-    }
-    if (message.includes('incorrect username or password')) {
-      return 'Correo electrónico o contraseña incorrectos';
-    }
-    if (message.includes('user does not exist')) {
-      return 'No existe una cuenta con este correo electrónico';
-    }
-    return 'Error al iniciar sesión. Por favor, intenta de nuevo';
-  };
+
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,24 +34,19 @@ const LoginForm = memo(() => {
     setLoading(true);
 
     try {
-      const result = await authService.signIn({
-        email: formData.email.trim(),
-        password: formData.password
-      });
-
-      if (result.success && result.token) {
-        sessionService.setToken(result.token);
-        router.push('/dashboard');
-      } else {
+      const result = await signIn(formData.email.trim(), formData.password);
+      
+      if (!result.success) {
         setError(result.error || 'Error al iniciar sesión');
       }
+      // El AuthContext se encarga del redirect automáticamente
     } catch (err) {
       console.error('Login error:', err);
-      setError(err instanceof Error ? getErrorMessage(err) : 'Error al iniciar sesión');
+      setError('Error al iniciar sesión. Por favor, intenta de nuevo');
     } finally {
       setLoading(false);
     }
-  }, [formData, router]);
+  }, [formData, signIn]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
