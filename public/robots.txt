@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://urbex.com.co/sitemap.xml
+
+# Disallow auth pages from indexing
+Disallow: /auth/
+Disallow: /dashboard/
+Disallow: /api/
+
+# Allow important pages
+Allow: /
+Allow: /images/
+Allow: /*.css
+Allow: /*.js 

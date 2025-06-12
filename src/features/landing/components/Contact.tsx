@@ -30,8 +30,8 @@ const contactInfo: ContactInfo[] = [
   {
     icon: Phone,
     title: "Teléfono",
-    value: "+1 (555) 123-4567",
-    href: "tel:+15551234567"
+    value: "+57 310 8780 049",
+    href: "tel:+573108780049"
   },
   {
     icon: MapPin,

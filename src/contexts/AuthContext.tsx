@@ -79,22 +79,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   const signIn = async (email: string, password: string) => {
+    console.log('🔵 SignIn called with:', email)
+    
     try {
       const result = await authService.signIn({ email, password })
+      console.log('🔵 Auth service result:', result)
       
       if (result.success && result.token) {
         const userInfo = { email, name: email.split('@')[0] }
+        console.log('🔵 Setting user:', userInfo)
+        
         setUser({ ...userInfo, token: result.token })
         saveUserToStorage(userInfo)
         
-        // Redirect to dashboard after successful login
-        router.push('/dashboard')
+        // Small delay to ensure state is updated before navigation
+        setTimeout(() => {
+          console.log('🔵 Redirecting to dashboard')
+          router.push('/dashboard')
+        }, 100)
         
         return { success: true }
       }
       
+      console.log('🔴 Login failed:', result.error)
       return { success: false, error: result.error }
     } catch (error) {
+      console.error('🔴 SignIn error:', error)
       return { success: false, error: 'Error durante el login' }
     }
   }
@@ -129,14 +139,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  const value: AuthContextType = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = React.useMemo<AuthContextType>(() => ({
     user,
     loading,
     signIn,
     signUp,
     signOut,
     isAuthenticated: !!user
-  }
+  }), [user, loading, signIn, signUp, signOut])
 
   return (
     <AuthContext.Provider value={value}>

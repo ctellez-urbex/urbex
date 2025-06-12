@@ -10,9 +10,11 @@ interface AuthLayoutProps {
 
 function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white transition-colors duration-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
       <AuthHeader />
-      <main className="flex-grow pt-16 pb-8">{children}</main>
+      <main className="flex-1 flex items-center justify-center p-4 pt-20">
+        {children}
+      </main>
       <AuthFooter />
     </div>
   );

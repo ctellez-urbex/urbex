@@ -12,10 +12,71 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Urbex - Información Inmobiliaria",
-  description: "Plataforma especializada en información inmobiliaria que te permite acceder a toda la información de cualquier propiedad o lote de forma fácil y rápida.",
-  keywords: "inmobiliaria, propiedades, urbex, bienes raíces, información inmobiliaria",
-  authors: [{ name: "Urbex Team" }],
+  title: {
+    default: "Urbex - Información Inmobiliaria | Propiedades y Bienes Raíces en Colombia",
+    template: "%s | Urbex"
+  },
+  description: "Plataforma especializada en información inmobiliaria que te permite acceder a toda la información de cualquier propiedad o lote de forma fácil y rápida. Bienes raíces en Colombia.",
+  keywords: [
+    "inmobiliaria",
+    "propiedades Colombia", 
+    "bienes raíces",
+    "lotes",
+    "información inmobiliaria",
+    "urbex",
+    "propiedades en venta",
+    "real estate Colombia"
+  ],
+  authors: [{ name: "Urbex Team", url: "https://urbex.com.co" }],
+  creator: "Urbex",
+  publisher: "Urbex",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL("https://urbex.com.co"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Urbex - Información Inmobiliaria | Propiedades Colombia",
+    description: "Plataforma especializada en información inmobiliaria. Accede a toda la información de propiedades y lotes en Colombia de forma fácil y rápida.",
+    url: "https://urbex.com.co",
+    siteName: "Urbex",
+    images: [
+      {
+        url: "/images/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Urbex - Información Inmobiliaria",
+      },
+    ],
+    locale: "es_CO",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Urbex - Información Inmobiliaria",
+    description: "Plataforma especializada en información inmobiliaria en Colombia.",
+    images: ["/images/og-image.jpg"],
+    creator: "@urbex_co",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: "your-google-verification-code",
+    yandex: "your-yandex-verification-code",
+  },
 };
 
 export const viewport: Viewport = {

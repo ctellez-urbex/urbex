@@ -4,6 +4,7 @@ import { useState, useCallback, memo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { SimpleButton } from '@/components/ui/simple-button';
 import Link from 'next/link';
 
 interface LoginFormData {
@@ -30,23 +31,33 @@ const LoginForm = memo(() => {
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🟡 Form submit triggered, loading:', loading)
+    
+    // Prevent multiple submissions
+    if (loading) {
+      console.log('🟡 Already loading, ignoring submit')
+      return;
+    }
+    
     setError('');
     setLoading(true);
 
     try {
+      console.log('🟡 Calling signIn...')
       const result = await signIn(formData.email.trim(), formData.password);
+      console.log('🟡 SignIn result:', result)
       
       if (!result.success) {
         setError(result.error || 'Error al iniciar sesión');
+        setLoading(false); // Only set loading false if there's an error
       }
-      // El AuthContext se encarga del redirect automáticamente
+      // Don't set loading false here if success - let redirect happen
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('🔴 Login form error:', err);
       setError('Error al iniciar sesión. Por favor, intenta de nuevo');
-    } finally {
       setLoading(false);
     }
-  }, [formData, signIn]);
+  }, [formData, signIn, loading]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
@@ -100,14 +111,14 @@ const LoginForm = memo(() => {
         </div>
       </div>
 
-      <Button
+      <SimpleButton
         type="submit"
         disabled={loading || !formData.email || !formData.password}
         className="w-full"
         loading={loading}
       >
-        {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-      </Button>
+        Iniciar sesión
+      </SimpleButton>
 
       <div className="text-sm text-center space-y-2">
         <Link 

@@ -1,15 +1,20 @@
 import { RegisterForm } from '@/features/auth/components/RegisterForm';
+import { AuthRoute } from '@/components/auth/AuthRoute';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Registrarse - Urbex',
+  title: 'Registrarse',
   description: 'Crea tu cuenta en Urbex para acceder a información inmobiliaria exclusiva',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <AuthRoute>
+      <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             Crear cuenta
@@ -18,22 +23,10 @@ export default function RegisterPage() {
             Únete a Urbex y descubre el futuro inmobiliario
           </p>
         </div>
-        <div className="bg-white dark:bg-neutral-800 py-6 sm:py-8 px-4 sm:px-6 shadow-sm sm:shadow-lg border border-neutral-200 dark:border-neutral-700 sm:rounded-lg">
+        <div className="bg-white dark:bg-gray-800 py-6 sm:py-8 px-4 sm:px-6 shadow-lg border border-gray-200 dark:border-gray-700 rounded-lg">
           <RegisterForm />
         </div>
-        <div className="text-center">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Al crear una cuenta, aceptas nuestros{' '}
-            <a href="/terms" className="text-blue-600 hover:text-blue-500 dark:text-blue-400">
-              términos de servicio
-            </a>{' '}
-            y{' '}
-            <a href="/privacy" className="text-blue-600 hover:text-blue-500 dark:text-blue-400">
-              política de privacidad
-            </a>
-          </p>
-        </div>
       </div>
-    </div>
+    </AuthRoute>
   );
 } 
