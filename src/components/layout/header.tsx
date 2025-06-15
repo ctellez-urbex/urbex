@@ -10,7 +10,7 @@ import { Menu, X, User, LogOut } from "lucide-react";
 
 // Definición de enlaces de navegación
 const navLinks = [
-  { href: "#explorar", label: "Explorar" },
+  { href: "#hero", label: "Explorar" },
   { href: "#services", label: "Servicios" },
   { href: "#about", label: "Ideal" },
   { href: "#clients", label: "Clientes" },

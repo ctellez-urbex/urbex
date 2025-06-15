@@ -1,2 +1,2 @@
-# SPA Routing - Redirect all routes to index.html
-/*    /index.html   200 
+# Redirect all requests to index.html
+/* /index.html 200 

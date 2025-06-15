@@ -111,14 +111,27 @@ const LoginForm = memo(() => {
         </div>
       </div>
 
-      <SimpleButton
+      <Button
         type="submit"
+        variant="primary-blue"
         disabled={loading || !formData.email || !formData.password}
         className="w-full"
         loading={loading}
       >
         Iniciar sesión
-      </SimpleButton>
+      </Button>
+
+      <div className="flex gap-3">
+        <Button
+          type="button"
+          variant="primary-blue"
+          onClick={() => window.location.href = '/'}
+          className="flex-1"
+          disabled={loading}
+        >
+          Volver
+        </Button>
+      </div>
 
       <div className="text-sm text-center space-y-2">
         <Link 

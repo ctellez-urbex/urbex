@@ -387,6 +387,7 @@ const Contact = memo(() => {
 
               <Button
                 type="submit"
+                variant="primary-blue"
                 disabled={status === "sending" || !isFormValid}
                 loading={status === "sending"}
                 className="w-full"

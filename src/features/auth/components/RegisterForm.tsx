@@ -279,6 +279,7 @@ const RegisterForm = memo(() => {
 
       <Button
         type="submit"
+        variant="primary-blue"
         disabled={loading || !isFormValid}
         loading={loading}
         className="w-full"

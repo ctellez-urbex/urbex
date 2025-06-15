@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { LoadingScreen } from '@/components/ui/loading-screen'
 
 interface AuthRouteProps {
   children: React.ReactNode
@@ -15,19 +16,24 @@ export const AuthRoute: React.FC<AuthRouteProps> = ({
 }) => {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
+  const [isNavigating, setIsNavigating] = useState(false)
 
   useEffect(() => {
     if (!loading && user) {
-      router.push(redirectTo)
+      setIsNavigating(true)
+      // Use replace instead of push to avoid adding to history
+      router.replace(redirectTo)
     }
   }, [user, loading, router, redirectTo])
 
-  // Show loading spinner while checking auth status
-  if (loading) {
+  // Show loading screen while checking auth status or navigating
+  if (loading || isNavigating) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <LoadingScreen 
+        isVisible={true} 
+        message={loading ? "Verificando sesión..." : "Redirigiendo..."} 
+      />
     )
   }
 

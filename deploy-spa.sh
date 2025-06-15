@@ -5,87 +5,145 @@
 
 set -e
 
-# Colors for output
+# Colores para output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Default values
+# Variables
 BUCKET_NAME=${1:-"urbex.com.co-production"}
 DISTRIBUTION_ID=${2}
+REGION="us-east-2"
 
-echo -e "${YELLOW}🚀 Starting SPA deployment to S3 and CloudFront...${NC}"
+# Función para verificar credenciales de AWS
+check_aws_credentials() {
+    echo -e "${YELLOW}🔑 Verificando credenciales de AWS...${NC}"
+    
+    # Verificar si las variables de entorno están configuradas
+    if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+        echo -e "${RED}❌ Credenciales de AWS no encontradas en variables de entorno${NC}"
+        echo -e "${YELLOW}Por favor, configura las siguientes variables de entorno:${NC}"
+        echo "export AWS_ACCESS_KEY_ID=tu_access_key"
+        echo "export AWS_SECRET_ACCESS_KEY=tu_secret_key"
+        echo "export AWS_DEFAULT_REGION=$REGION"
+        exit 1
+    fi
 
-# Check if AWS CLI is installed
-if ! command -v aws &> /dev/null; then
-    echo -e "${RED}❌ AWS CLI is not installed. Please install it first.${NC}"
-    exit 1
-fi
+    # Verificar si las credenciales son válidas
+    if ! aws sts get-caller-identity &>/dev/null; then
+        echo -e "${RED}❌ Credenciales de AWS inválidas${NC}"
+        echo -e "${YELLOW}Por favor, verifica tus credenciales y vuelve a intentar${NC}"
+        exit 1
+    fi
 
-# Build the application
-echo -e "${YELLOW}📦 Building Next.js application...${NC}"
+    echo -e "${GREEN}✅ Credenciales de AWS verificadas${NC}"
+}
+
+# Función para verificar el bucket de S3
+check_s3_bucket() {
+    echo -e "${YELLOW}🔍 Verificando bucket de S3...${NC}"
+    
+    if ! aws s3 ls "s3://$BUCKET_NAME" &>/dev/null; then
+        echo -e "${RED}❌ No se puede acceder al bucket $BUCKET_NAME${NC}"
+        echo -e "${YELLOW}Por favor, verifica que:${NC}"
+        echo "1. El bucket existe"
+        echo "2. Tienes permisos para acceder al bucket"
+        echo "3. El nombre del bucket es correcto"
+        exit 1
+    fi
+
+    echo -e "${GREEN}✅ Bucket de S3 verificado${NC}"
+}
+
+# Función para verificar la distribución de CloudFront
+check_cloudfront_distribution() {
+    if [ ! -z "$DISTRIBUTION_ID" ]; then
+        echo -e "${YELLOW}🔍 Verificando distribución de CloudFront...${NC}"
+        
+        if ! aws cloudfront get-distribution --id $DISTRIBUTION_ID &>/dev/null; then
+            echo -e "${RED}❌ No se puede acceder a la distribución de CloudFront${NC}"
+            echo -e "${YELLOW}Por favor, verifica que:${NC}"
+            echo "1. El ID de distribución es correcto"
+            echo "2. Tienes permisos para acceder a CloudFront"
+            exit 1
+        fi
+
+        echo -e "${GREEN}✅ Distribución de CloudFront verificada${NC}"
+    fi
+}
+
+echo -e "${YELLOW}🚀 Iniciando despliegue de Urbex SPA...${NC}"
+
+# Verificar credenciales y recursos
+check_aws_credentials
+check_s3_bucket
+check_cloudfront_distribution
+
+# 1. Build de la aplicación
+echo -e "\n${YELLOW}📦 Construyendo la aplicación...${NC}"
 npm run build
 
-# Check if build was successful
-if [ ! -d "out" ]; then
-    echo -e "${RED}❌ Build failed. 'out' directory not found.${NC}"
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Error en el build${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Build completed successfully${NC}"
+# 2. Copiar archivos de configuración
+echo -e "\n${YELLOW}📋 Copiando archivos de configuración...${NC}"
+cp public/_redirects out/
+cp vercel.json out/
 
-# Deploy to S3 with proper cache headers
-echo -e "${YELLOW}📤 Uploading files to S3...${NC}"
+# 3. Subir archivos a S3
+echo -e "\n${YELLOW}📤 Subiendo archivos a S3...${NC}"
 
-# Upload static assets (JS, CSS, images) with long cache
+# Subir archivos estáticos con caché largo
 aws s3 sync out/ s3://$BUCKET_NAME/ \
-    --exclude "*" \
-    --include "*.js" --include "*.css" --include "*.png" --include "*.jpg" --include "*.jpeg" --include "*.gif" --include "*.svg" --include "*.ico" --include "*.woff" --include "*.woff2" \
+    --delete \
     --cache-control "public, max-age=31536000, immutable" \
-    --delete
+    --exclude "*.html" \
+    --exclude "*.json" \
+    --exclude "_redirects" \
+    --region $REGION
 
-# Upload _next/static with long cache (Next.js assets)
-aws s3 sync out/_next/static/ s3://$BUCKET_NAME/_next/static/ \
-    --cache-control "public, max-age=31536000, immutable" \
-    --delete
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Error al subir archivos estáticos a S3${NC}"
+    exit 1
+fi
 
-# Upload HTML files with short cache to ensure updates are seen quickly
+# Subir HTML, JSON y _redirects con no-cache
 aws s3 sync out/ s3://$BUCKET_NAME/ \
-    --exclude "*" \
+    --delete \
+    --cache-control "no-cache" \
     --include "*.html" \
-    --cache-control "public, max-age=0, must-revalidate" \
-    --delete
+    --include "*.json" \
+    --include "_redirects" \
+    --region $REGION
 
-# Upload remaining files with medium cache
-aws s3 sync out/ s3://$BUCKET_NAME/ \
-    --exclude "*.js" --exclude "*.css" --exclude "*.png" --exclude "*.jpg" --exclude "*.jpeg" --exclude "*.gif" --exclude "*.svg" --exclude "*.ico" --exclude "*.woff" --exclude "*.woff2" --exclude "*.html" \
-    --cache-control "public, max-age=86400" \
-    --delete
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Error al subir archivos HTML/JSON a S3${NC}"
+    exit 1
+fi
 
-echo -e "${GREEN}✅ Files uploaded to S3 successfully${NC}"
-
-# Invalidate CloudFront cache if distribution ID provided
+# 4. Invalidar caché de CloudFront
 if [ ! -z "$DISTRIBUTION_ID" ]; then
-    echo -e "${YELLOW}🔄 Creating CloudFront invalidation...${NC}"
-    
-    INVALIDATION_ID=$(aws cloudfront create-invalidation \
+    echo -e "\n${YELLOW}🔄 Invalidando caché de CloudFront...${NC}"
+    aws cloudfront create-invalidation \
         --distribution-id $DISTRIBUTION_ID \
         --paths "/*" \
-        --query 'Invalidation.Id' \
-        --output text)
-    
-    echo -e "${GREEN}✅ CloudFront invalidation created: $INVALIDATION_ID${NC}"
-    echo -e "${YELLOW}⏳ Waiting for invalidation to complete...${NC}"
-    
-    aws cloudfront wait invalidation-completed \
-        --distribution-id $DISTRIBUTION_ID \
-        --id $INVALIDATION_ID
-    
-    echo -e "${GREEN}✅ CloudFront invalidation completed${NC}"
+        --region $REGION
+
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ Error al invalidar caché de CloudFront${NC}"
+        exit 1
+    fi
 else
-    echo -e "${YELLOW}⚠️  No CloudFront distribution ID provided. Skipping cache invalidation.${NC}"
-    echo -e "${YELLOW}   Note: It may take up to 24 hours for changes to propagate without invalidation.${NC}"
+    echo -e "\n${YELLOW}⚠️  No se proporcionó ID de distribución de CloudFront, omitiendo invalidación${NC}"
+fi
+
+echo -e "\n${GREEN}✅ ¡Despliegue completado exitosamente!${NC}"
+if [ ! -z "$DISTRIBUTION_ID" ]; then
+    echo -e "${YELLOW}⏳ La invalidación de caché puede tomar unos minutos...${NC}"
 fi
 
 echo -e "${GREEN}🎉 SPA deployment completed successfully!${NC}"

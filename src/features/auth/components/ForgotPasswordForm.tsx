@@ -240,6 +240,7 @@ const ForgotPasswordForm = memo(() => {
 
           <Button
             type="submit"
+            variant="primary-blue"
             disabled={loading || !formData.email}
             loading={loading}
             className="w-full"
@@ -367,6 +368,7 @@ const ForgotPasswordForm = memo(() => {
 
         <Button
           type="submit"
+          variant="primary-blue"
           disabled={loading || !formData.code || !formData.newPassword || !formData.confirmPassword}
           loading={loading}
           className="w-full"

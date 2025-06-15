@@ -1,0 +1,132 @@
+{
+  "DistributionConfig": {
+    "Origins": {
+      "Quantity": 1,
+      "Items": [
+        {
+          "Id": "S3-urbex",
+          "DomainName": "urbex-bucket.s3.amazonaws.com",
+          "S3OriginConfig": {
+            "OriginAccessIdentity": ""
+          },
+          "OriginPath": ""
+        }
+      ]
+    },
+    "DefaultCacheBehavior": {
+      "TargetOriginId": "S3-urbex",
+      "ViewerProtocolPolicy": "redirect-to-https",
+      "AllowedMethods": {
+        "Quantity": 2,
+        "Items": ["GET", "HEAD"],
+        "CachedMethods": {
+          "Quantity": 2,
+          "Items": ["GET", "HEAD"]
+        }
+      },
+      "ForwardedValues": {
+        "QueryString": false,
+        "Cookies": {
+          "Forward": "none"
+        },
+        "Headers": {
+          "Quantity": 0
+        },
+        "QueryStringCacheKeys": {
+          "Quantity": 0
+        }
+      },
+      "MinTTL": 0,
+      "DefaultTTL": 86400,
+      "MaxTTL": 31536000,
+      "Compress": true
+    },
+    "CacheBehaviors": {
+      "Quantity": 2,
+      "Items": [
+        {
+          "PathPattern": "/_next/static/*",
+          "TargetOriginId": "S3-urbex",
+          "ViewerProtocolPolicy": "redirect-to-https",
+          "AllowedMethods": {
+            "Quantity": 2,
+            "Items": ["GET", "HEAD"],
+            "CachedMethods": {
+              "Quantity": 2,
+              "Items": ["GET", "HEAD"]
+            }
+          },
+          "ForwardedValues": {
+            "QueryString": false,
+            "Cookies": {
+              "Forward": "none"
+            },
+            "Headers": {
+              "Quantity": 0
+            },
+            "QueryStringCacheKeys": {
+              "Quantity": 0
+            }
+          },
+          "MinTTL": 0,
+          "DefaultTTL": 31536000,
+          "MaxTTL": 31536000,
+          "Compress": true
+        },
+        {
+          "PathPattern": "/*.js",
+          "TargetOriginId": "S3-urbex",
+          "ViewerProtocolPolicy": "redirect-to-https",
+          "AllowedMethods": {
+            "Quantity": 2,
+            "Items": ["GET", "HEAD"],
+            "CachedMethods": {
+              "Quantity": 2,
+              "Items": ["GET", "HEAD"]
+            }
+          },
+          "ForwardedValues": {
+            "QueryString": false,
+            "Cookies": {
+              "Forward": "none"
+            },
+            "Headers": {
+              "Quantity": 0
+            },
+            "QueryStringCacheKeys": {
+              "Quantity": 0
+            }
+          },
+          "MinTTL": 0,
+          "DefaultTTL": 31536000,
+          "MaxTTL": 31536000,
+          "Compress": true
+        }
+      ]
+    },
+    "CustomErrorResponses": {
+      "Quantity": 2,
+      "Items": [
+        {
+          "ErrorCode": 403,
+          "ResponsePagePath": "/index.html",
+          "ResponseCode": 200,
+          "ErrorCachingMinTTL": 0
+        },
+        {
+          "ErrorCode": 404,
+          "ResponsePagePath": "/index.html",
+          "ResponseCode": 200,
+          "ErrorCachingMinTTL": 0
+        }
+      ]
+    },
+    "Comment": "Urbex SPA Distribution",
+    "Enabled": true,
+    "DefaultRootObject": "index.html",
+    "PriceClass": "PriceClass_100",
+    "ViewerCertificate": {
+      "CloudFrontDefaultCertificate": true
+    }
+  }
+} 
