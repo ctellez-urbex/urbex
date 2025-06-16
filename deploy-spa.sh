@@ -12,7 +12,8 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Variables
-BUCKET_NAME=${1:-"urbex.com.co-production"}
+# BUCKET_NAME=${1:-"urbex.com.co-production"}
+BUCKET_NAME="frontend-urbex"
 DISTRIBUTION_ID=${2}
 REGION="us-east-2"
 
@@ -82,7 +83,7 @@ check_cloudfront_distribution
 
 # 1. Build de la aplicación
 echo -e "\n${YELLOW}📦 Construyendo la aplicación...${NC}"
-npm run build
+NODE_ENV=production npm run build
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Error en el build${NC}"
@@ -92,6 +93,7 @@ fi
 # 2. Copiar archivos de configuración
 echo -e "\n${YELLOW}📋 Copiando archivos de configuración...${NC}"
 cp public/_redirects out/
+cp public/404.html out/
 cp vercel.json out/
 
 # 3. Subir archivos a S3
@@ -104,6 +106,7 @@ aws s3 sync out/ s3://$BUCKET_NAME/ \
     --exclude "*.html" \
     --exclude "*.json" \
     --exclude "_redirects" \
+    --exclude "404.html" \
     --region $REGION
 
 if [ $? -ne 0 ]; then
@@ -111,13 +114,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Subir HTML, JSON y _redirects con no-cache
+# Subir HTML, JSON y archivos de configuración con no-cache
 aws s3 sync out/ s3://$BUCKET_NAME/ \
     --delete \
     --cache-control "no-cache" \
     --include "*.html" \
     --include "*.json" \
     --include "_redirects" \
+    --include "404.html" \
     --region $REGION
 
 if [ $? -ne 0 ]; then

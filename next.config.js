@@ -1,18 +1,27 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  distDir: 'out',
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
   reactStrictMode: true,
   images: {
     unoptimized: true,
   },
-  // Ensure compatibility with SPA routing
-  distDir: 'out',
-  // Add basePath if your app is not served from root
-  // basePath: '',
-  // Add assetPrefix if your assets are served from a different domain
-  // assetPrefix: '',
+  // Configuración para manejar rutas en producción
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/' : '',
+  basePath: '',
+  // Configuración para desarrollo
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/:path*',
+          destination: '/index.html',
+        },
+      ],
+    }
+  },
 }
 
 module.exports = nextConfig 
