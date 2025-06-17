@@ -17,7 +17,7 @@
             ],
             "Condition": {
                 "StringEquals": {
-                    "AWS:SourceArn": "arn:aws:cloudfront::533266998582:distribution/d2i14zgn3xm1xu"
+                    "AWS:SourceArn": "arn:aws:cloudfront::533266998582:distribution/E2YMCY3MVGXYJE"
                 }
             }
         },
