@@ -1,11 +1,14 @@
 # Redirect all requests to index.html
 /* /index.html 200
 
+# Handle specific routes
+/login /index.html 200
+/auth/* /index.html 200
+/api/* /index.html 200
+/_next/* /index.html 200
+
 # Handle 404 errors
 /404 /index.html 200
-
-# Handle auth routes
-/auth/* /index.html 200
 
 # Handle dashboard routes
 /dashboard/* /index.html 200

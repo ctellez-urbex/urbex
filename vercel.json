@@ -24,5 +24,23 @@
         }
       ]
     }
+  ],
+  "routes": [
+    {
+      "src": "/login",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/auth/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/_next/(.*)",
+      "dest": "/index.html"
+    }
   ]
 } 

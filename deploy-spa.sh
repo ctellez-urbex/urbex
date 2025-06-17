@@ -12,33 +12,58 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Variables
-# BUCKET_NAME=${1:-"urbex.com.co-production"}
-BUCKET_NAME="frontend-urbex"
-DISTRIBUTION_ID=${2}
-REGION="us-east-2"
+BUCKET_NAME=${1:-"frontend-urbex"}
+DISTRIBUTION_ID=${2:-""}
+REGION="us-east-1"
 
 # Función para verificar credenciales de AWS
 check_aws_credentials() {
     echo -e "${YELLOW}🔑 Verificando credenciales de AWS...${NC}"
     
-    # Verificar si las variables de entorno están configuradas
     if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
-        echo -e "${RED}❌ Credenciales de AWS no encontradas en variables de entorno${NC}"
-        echo -e "${YELLOW}Por favor, configura las siguientes variables de entorno:${NC}"
+        echo -e "${RED}❌ Credenciales de AWS no encontradas${NC}"
+        echo -e "${YELLOW}Configura las variables de entorno:${NC}"
         echo "export AWS_ACCESS_KEY_ID=tu_access_key"
         echo "export AWS_SECRET_ACCESS_KEY=tu_secret_key"
-        echo "export AWS_DEFAULT_REGION=$REGION"
         exit 1
     fi
 
-    # Verificar si las credenciales son válidas
     if ! aws sts get-caller-identity &>/dev/null; then
         echo -e "${RED}❌ Credenciales de AWS inválidas${NC}"
-        echo -e "${YELLOW}Por favor, verifica tus credenciales y vuelve a intentar${NC}"
         exit 1
     fi
 
     echo -e "${GREEN}✅ Credenciales de AWS verificadas${NC}"
+}
+
+# Función para obtener el ID de distribución
+get_distribution_id() {
+    if [ -z "$DISTRIBUTION_ID" ]; then
+        echo -e "${YELLOW}🔍 Obteniendo ID de distribución de CloudFront...${NC}"
+        
+        # Intentar obtener el ID de la distribución
+        DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Aliases.Items, 'd2i14zgn3xm1xu.cloudfront.net')].Id" --output text 2>/dev/null)
+        
+        if [ -z "$DISTRIBUTION_ID" ]; then
+            echo -e "${YELLOW}No se pudo obtener el ID automáticamente.${NC}"
+            echo -e "${YELLOW}Por favor, ingresa el ID de la distribución de CloudFront:${NC}"
+            read DISTRIBUTION_ID
+            
+            if [ -z "$DISTRIBUTION_ID" ]; then
+                echo -e "${RED}❌ No se proporcionó un ID de distribución${NC}"
+                exit 1
+            fi
+        fi
+    fi
+    
+    # Verificar que el ID es válido
+    if ! aws cloudfront get-distribution-config --id "$DISTRIBUTION_ID" &>/dev/null; then
+        echo -e "${RED}❌ ID de distribución inválido: $DISTRIBUTION_ID${NC}"
+        echo -e "${YELLOW}Por favor, verifica el ID en la consola de AWS y vuelve a intentar${NC}"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}✅ ID de distribución válido: $DISTRIBUTION_ID${NC}"
 }
 
 # Función para verificar el bucket de S3
@@ -47,10 +72,6 @@ check_s3_bucket() {
     
     if ! aws s3 ls "s3://$BUCKET_NAME" &>/dev/null; then
         echo -e "${RED}❌ No se puede acceder al bucket $BUCKET_NAME${NC}"
-        echo -e "${YELLOW}Por favor, verifica que:${NC}"
-        echo "1. El bucket existe"
-        echo "2. Tienes permisos para acceder al bucket"
-        echo "3. El nombre del bucket es correcto"
         exit 1
     fi
 
@@ -64,9 +85,6 @@ check_cloudfront_distribution() {
         
         if ! aws cloudfront get-distribution --id $DISTRIBUTION_ID &>/dev/null; then
             echo -e "${RED}❌ No se puede acceder a la distribución de CloudFront${NC}"
-            echo -e "${YELLOW}Por favor, verifica que:${NC}"
-            echo "1. El ID de distribución es correcto"
-            echo "2. Tienes permisos para acceder a CloudFront"
             exit 1
         fi
 
@@ -78,6 +96,7 @@ echo -e "${YELLOW}🚀 Iniciando despliegue de Urbex SPA...${NC}"
 
 # Verificar credenciales y recursos
 check_aws_credentials
+get_distribution_id
 check_s3_bucket
 check_cloudfront_distribution
 
