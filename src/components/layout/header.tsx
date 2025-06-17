@@ -215,7 +215,7 @@ export default function Header() {
           <div className="h-px w-full bg-neutral-200 dark:bg-neutral-800 my-2"></div>
           
           <Link
-            href="/auth/login"
+            href="/auth/login/index.html"
             className="bg-blue-500 hover:bg-blue-600 text-white py-3 mt-2 text-center font-medium rounded-md shadow-sm"
             onClick={() => setIsMenuOpen(false)}
           >

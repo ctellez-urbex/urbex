@@ -117,7 +117,7 @@ describe('LoginForm Component', () => {
         });
       });
 
-      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+      expect(mockPush).toHaveBeenCalledWith('/dashboard/index.html');
     });
 
     it('handles authentication errors correctly', async () => {

@@ -12,7 +12,7 @@ export default function Home() {
   useEffect(() => {
     // Si el usuario está autenticado, redirigir al dashboard
     if (!loading && user) {
-      router.push('/dashboard')
+      router.push('/dashboard/index.html')
     }
   }, [user, loading, router])
 

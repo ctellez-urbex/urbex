@@ -14,8 +14,8 @@ export default function RouteHandler({
   const isLandingPage = pathname === '/';
   
   // Routes that should not have header/footer
-  const isAuthRoute = pathname.startsWith('/auth');
-  const isDashboardRoute = pathname.startsWith('/dashboard');
+  const isAuthRoute = pathname.startsWith('/auth/login/index.html');
+  const isDashboardRoute = pathname.startsWith('/dashboard/index.html');
 
   // Only landing page gets the full layout with header/footer
   if (isLandingPage) {

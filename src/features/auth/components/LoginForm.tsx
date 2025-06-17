@@ -135,7 +135,7 @@ const LoginForm = memo(() => {
 
       <div className="text-sm text-center space-y-2">
         <Link 
-          href="/auth/forgot-password" 
+          href="/auth/forgot-password/index.html" 
           className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
         >
           ¿Olvidaste tu contraseña?
@@ -143,7 +143,7 @@ const LoginForm = memo(() => {
         <div>
           <span className="text-gray-600 dark:text-gray-400">¿No tienes una cuenta? </span>
           <Link 
-            href="/auth/register" 
+            href="/auth/register/index.html" 
             className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
           >
             Regístrate

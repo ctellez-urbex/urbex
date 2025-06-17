@@ -200,7 +200,7 @@ const Services = memo(() => {
             Listo para desbloquear el potencial de tu propiedad?
           </p>
           <a
-            href="/auth/register"
+            href="/auth/register/index.html"
             className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
           >
             Iniciar hoy

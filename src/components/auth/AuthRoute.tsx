@@ -12,7 +12,7 @@ interface AuthRouteProps {
 
 export const AuthRoute: React.FC<AuthRouteProps> = ({ 
   children, 
-  redirectTo = '/dashboard' 
+  redirectTo = '/dashboard/index.html' 
 }) => {
   const { user, loading } = useAuth()
   const router = useRouter()
