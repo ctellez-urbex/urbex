@@ -9,19 +9,8 @@ const nextConfig = {
     unoptimized: true,
   },
   // Configuración para manejar rutas en producción
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/' : '/',
   basePath: '',
-  // Configuración para desarrollo
-  async rewrites() {
-    return {
-      beforeFiles: [
-        {
-          source: '/:path*',
-          destination: '/index.html',
-        },
-      ],
-    }
-  },
 }
 
 module.exports = nextConfig 
