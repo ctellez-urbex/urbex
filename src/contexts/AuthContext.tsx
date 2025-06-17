@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('userInfo')
       }
-      router.push('/auth/login')
+      router.push('/')
     }
   }
 

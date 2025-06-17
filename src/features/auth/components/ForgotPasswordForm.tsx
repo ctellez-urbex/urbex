@@ -187,7 +187,7 @@ const ForgotPasswordForm = memo(() => {
       if (result.success) {
         setMessage('¡Contraseña actualizada correctamente! Redirigiendo...');
         setTimeout(() => {
-          router.push('/auth/login?message=password-reset-success');
+          router.push('/auth/login/index.html?message=password-reset-success');
         }, 2000);
       } else {
         setErrors({ code: result.error || 'Error al restablecer la contraseña' });

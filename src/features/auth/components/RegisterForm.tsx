@@ -291,7 +291,7 @@ const RegisterForm = memo(() => {
         <div>
           <span className="text-gray-600 dark:text-gray-400">¿Ya tienes una cuenta? </span>
           <Link 
-            href="/auth/login" 
+            href="/auth/login/index.html" 
             className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
           >
             Iniciar sesión

@@ -2,7 +2,7 @@
 /* /index.html 200
 
 # Handle specific routes
-/login /index.html 200
+/auth/login /index.html 200
 /auth/* /index.html 200
 /api/* /index.html 200
 /_next/* /index.html 200

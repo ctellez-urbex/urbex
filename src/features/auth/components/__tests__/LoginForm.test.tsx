@@ -238,14 +238,14 @@ describe('LoginForm Component', () => {
       render(<LoginForm />);
       
       const forgotPasswordLink = screen.getByRole('link', { name: /olvidaste tu contraseña/i });
-      expect(forgotPasswordLink).toHaveAttribute('href', '/auth/forgot-password');
+      expect(forgotPasswordLink).toHaveAttribute('href', '/auth/forgot-password/index.html');
     });
 
     it('renders create account link', () => {
       render(<LoginForm />);
       
       const createAccountLink = screen.getByRole('link', { name: /regístrate/i });
-      expect(createAccountLink).toHaveAttribute('href', '/auth/register');
+      expect(createAccountLink).toHaveAttribute('href', '/auth/register/index.html');
     });
   });
 

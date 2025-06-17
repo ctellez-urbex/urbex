@@ -27,7 +27,7 @@
   ],
   "routes": [
     {
-      "src": "/login",
+      "src": "/auth/login",
       "dest": "/index.html"
     },
     {

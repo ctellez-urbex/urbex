@@ -154,7 +154,7 @@ export default function Header() {
           <div className="h-5 w-px bg-neutral-300 dark:bg-neutral-700 mx-1"></div>
           
           <Link
-            href="/auth/login"
+            href="/auth/login/index.html"
             className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-md text-sm shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
           >
             Iniciar Sesión
