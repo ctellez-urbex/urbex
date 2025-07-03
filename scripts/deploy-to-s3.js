@@ -12,6 +12,7 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 const bucketName = process.env.S3_BUCKET_NAME;
+const distributionId = process.env.CF_DISTRIBUTION_ID;
 
 if (!bucketName) {
   console.error('❌ S3_BUCKET_NAME environment variable is required');

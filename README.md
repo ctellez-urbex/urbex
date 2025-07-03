@@ -429,16 +429,56 @@ Desarrollado con ❤️ por el Equipo Urbex
 
 ### 🛠️ Scripts Disponibles
 
+#### Scripts Consolidados
+
+El proyecto ha sido optimizado con scripts consolidados que combinan funcionalidades relacionadas:
+
+##### 🚀 Scripts de Despliegue
 ```bash
-# Testing
-npm test                    # Ejecutar tests
-npm run test:coverage      # Tests con cobertura
-npm run test:watch         # Tests en modo watch
-
-# Performance
-npm run optimize-images    # Optimizar imágenes
-npm run build             # Build de producción
-
-# Migración AWS SDK
-node scripts/migrate-aws-sdk-v3.js  # Guía de migración v2→v3
+npm run deploy                    # Despliegue completo (por defecto)
+npm run deploy:prepare           # Solo preparar archivos
+npm run deploy:s3-only           # Solo desplegar a S3 (sin CloudFront)
 ```
+
+##### 🧪 Scripts de Testing
+```bash
+npm test                         # Ejecutar tests
+npm run test:coverage           # Tests con cobertura
+npm run test:watch              # Tests en modo watch
+npm run test:users:api          # Probar endpoints de API
+npm run test:users:attributes   # Probar atributos de usuario
+npm run test:users:errors       # Probar manejo de errores
+npm run test:users:disabled     # Probar usuario deshabilitado
+```
+
+##### 🔧 Scripts de Gestión de Cognito
+```bash
+npm run cognito:list             # Listar usuarios
+npm run cognito:get <email>      # Obtener usuario específico
+npm run cognito:update-attributes # Actualizar atributos de todos los usuarios
+npm run cognito:setup-attributes  # Configurar atributos personalizados
+npm run cognito:check-config     # Verificar configuración actual
+npm run cognito:configure        # Configurar verificación de email
+```
+
+##### ⚡ Scripts de Performance
+```bash
+npm run optimize-images          # Optimizar imágenes
+npm run build                   # Build de producción
+```
+
+##### 🔄 Scripts de Migración
+```bash
+node scripts/migrate-aws-sdk-v3.js  # Guía de migración v2→v3
+node scripts/cleanup-duplicates.js  # Limpiar scripts duplicados
+```
+
+#### Beneficios de la Consolidación
+
+1. **Menos Mantenimiento**: Menos archivos que mantener y actualizar
+2. **Mejor Organización**: Funcionalidades relacionadas agrupadas
+3. **UX Mejorada**: Interfaz de línea de comandos consistente
+4. **Funciones Mejoradas**: Más opciones y mejor manejo de errores
+5. **Documentación Clara**: Una sola fuente de verdad para cada categoría
+
+Para más detalles, consulta [docs/scripts.md](./docs/scripts.md).
