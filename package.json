@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:static": "next build && node scripts/generate-index.js",
+    "build:deploy": "next build && node scripts/generate-index.js && node scripts/prepare-deployment.js",
     "start": "next start",
     "lint": "next lint",
     "export": "next build && next export",

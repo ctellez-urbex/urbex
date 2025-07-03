@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Menu, X, LogIn, UserPlus } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -13,7 +12,6 @@ const ThemeToggle = dynamic(() => import('@/components/ui/theme-toggle').then(mo
 });
 
 export default function LandingLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -64,7 +62,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => router.push('/auth/login')}
+                onClick={() => window.location.href = '/auth/login/index.html'}
                 className="flex items-center gap-2"
               >
                 <LogIn className="w-4 h-4" />
@@ -72,7 +70,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
               </Button>
               <Button
                 size="sm"
-                onClick={() => router.push('/auth/register')}
+                onClick={() => window.location.href = '/auth/register/index.html'}
                 className="flex items-center gap-2"
               >
                 <UserPlus className="w-4 h-4" />
@@ -141,7 +139,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        router.push('/auth/login');
+                        window.location.href = '/auth/login/index.html';
                         setMobileMenuOpen(false);
                       }}
                       className="flex items-center gap-2"
@@ -152,7 +150,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
                     <Button
                       size="sm"
                       onClick={() => {
-                        router.push('/auth/register');
+                        window.location.href = '/auth/register/index.html';
                         setMobileMenuOpen(false);
                       }}
                       className="flex items-center gap-2"
