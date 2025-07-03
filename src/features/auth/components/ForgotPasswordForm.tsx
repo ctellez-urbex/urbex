@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useCallback, memo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { authService } from '@/lib/aws/cognito';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -16,6 +15,7 @@ interface ForgotPasswordFormData {
 
 const ForgotPasswordForm = memo(() => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [formData, setFormData] = useState<ForgotPasswordFormData>({
     email: '',
@@ -27,6 +27,18 @@ const ForgotPasswordForm = memo(() => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Check URL parameters on component mount
+  useEffect(() => {
+    const emailParam = searchParams.get('email');
+    const stepParam = searchParams.get('step');
+    
+    if (emailParam && stepParam === 'code') {
+      setFormData(prev => ({ ...prev, email: emailParam }));
+      setStep('code');
+      setMessage('Ingresa el código de verificación que recibiste por email.');
+    }
+  }, [searchParams]);
 
   // Cooldown timer for resend button
   useEffect(() => {
@@ -121,19 +133,28 @@ const ForgotPasswordForm = memo(() => {
     setErrors({});
 
     try {
-      const result = await authService.forgotPassword(formData.email);
+      const response = await fetch('/api/auth/forgot-password/index.html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const result = await response.json();
       
       if (result.success) {
         setStep('code');
         setMessage('Se ha enviado un código de verificación a tu correo electrónico. Revisa también tu carpeta de spam.');
         setResendCooldown(60); // 60 second cooldown
       } else {
+        // Show the specific error message from the API
         setErrors({ email: result.error || 'Error al solicitar el código' });
       }
     } catch (err) {
       console.error('Forgot password error:', err);
       setErrors({ 
-        email: err instanceof Error ? getErrorMessage(err) : 'Error al solicitar el código' 
+        email: 'Error de conexión. Por favor, verifica tu conexión a internet e intenta de nuevo.' 
       });
     } finally {
       setLoading(false);
@@ -148,7 +169,15 @@ const ForgotPasswordForm = memo(() => {
     setErrors({});
 
     try {
-      const result = await authService.forgotPassword(formData.email);
+      const response = await fetch('/api/auth/forgot-password/index.html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const result = await response.json();
       
       if (result.success) {
         setMessage('Código reenviado correctamente');
@@ -178,11 +207,19 @@ const ForgotPasswordForm = memo(() => {
     setErrors({});
 
     try {
-      const result = await authService.resetPassword({
-        email: formData.email,
-        code: formData.code.trim(),
-        newPassword: formData.newPassword
+      const response = await fetch('/api/auth/reset-password/index.html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          code: formData.code.trim(),
+          newPassword: formData.newPassword
+        }),
       });
+
+      const result = await response.json();
 
       if (result.success) {
         setMessage('¡Contraseña actualizada correctamente! Redirigiendo...');
@@ -251,7 +288,7 @@ const ForgotPasswordForm = memo(() => {
 
         <div className="text-center text-sm">
           <Link 
-            href="/auth/login" 
+            href="/auth/login/index.html" 
             className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
           >
             ← Volver al inicio de sesión
@@ -386,7 +423,7 @@ const ForgotPasswordForm = memo(() => {
             ← Cambiar correo
           </button>
           <Link 
-            href="/auth/login" 
+            href="/auth/login/index.html" 
             className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
           >
             Cancelar

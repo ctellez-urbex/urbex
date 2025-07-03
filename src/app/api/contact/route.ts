@@ -59,9 +59,9 @@ export async function POST(request: Request) {
 
     // Prepare email content
     const emailData = {
-      from: `Urbex Contact Form <noreply@${process.env.MAILGUN_DOMAIN}>`,
+      from: `Urbex <noreply@${process.env.MAILGUN_DOMAIN}>`,
       to: process.env.CONTACT_EMAIL,
-      subject: `Nuevo mensaje de contacto de ${name}`,
+      subject: `Nuevo mensaje de contacto de ${name} desde la landing page`,
       text: `
         Nombre: ${name}
         Email: ${email}
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         ${message}
       `,
       html: `
-        <h2>Nuevo mensaje de contacto</h2>
+        <h2>Nuevo mensaje de contacto desde la landing page</h2>
         <p><strong>Nombre:</strong> ${name}</p>
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Teléfono:</strong> ${phone}</p>

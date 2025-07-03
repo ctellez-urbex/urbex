@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@/lib/aws/cognito';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 const VerifyEmailForm = memo(() => {
   const router = useRouter();
@@ -31,12 +32,43 @@ const VerifyEmailForm = memo(() => {
     setLoading(true);
 
     try {
-      const result = await authService.confirmSignUp(email, formData.code.trim());
-      if (result.success) {
-        setMessage('✅ Correo electrónico verificado correctamente');
+      // Use the new API route that properly confirms the user
+      const response = await fetch('/api/auth/confirm-signup/index.html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          code: formData.code.trim()
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Disable the user immediately after successful registration
+        try {
+          const disableResponse = await fetch('/api/admin/disable-user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: email.trim()
+            })
+          });
+
+          if (!disableResponse.ok) {
+            console.warn('Failed to disable user after registration:', await disableResponse.text());
+          }
+        } catch (disableError) {
+          console.warn('Error disabling user after registration:', disableError);
+        }
+        setMessage('✅ Correo electrónico verificado correctamente. Espera la aprobación del administrador.');
         setTimeout(() => {
-          router.push('/auth/login?verified=true');
-        }, 2000);
+          router.push('/auth/login/index.html?verified=true');
+        }, 3000);
       } else {
         setError(result.error || 'Error al verificar el correo electrónico');
       }
@@ -124,9 +156,14 @@ const VerifyEmailForm = memo(() => {
 
         <Button
           type="submit"
+          variant="primary-blue"
           disabled={loading || resendLoading || !formData.code.trim()}
           loading={loading}
-          className="w-full"
+          className={cn(
+            "w-full transition-all duration-300",
+            !formData.code.trim() && "opacity-50 cursor-not-allowed",
+            formData.code.trim() && !loading && !resendLoading && "hover:scale-105"
+          )}
         >
           {loading ? 'Verificando...' : 'Verificar correo'}
         </Button>
@@ -135,11 +172,11 @@ const VerifyEmailForm = memo(() => {
       <div className="text-center space-y-2">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           onClick={handleResendCode}
           disabled={loading || resendLoading}
           loading={resendLoading}
-          className="text-sm"
+          className="text-sm text-blue-600 border-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-blue-950"
         >
           {resendLoading ? 'Reenviando...' : '¿No recibiste el código? Reenviar'}
         </Button>
@@ -147,7 +184,7 @@ const VerifyEmailForm = memo(() => {
         <div className="text-xs text-gray-500 dark:text-gray-400">
           <p>¿Problemas con la verificación?</p>
           <a 
-            href="/auth/login" 
+            href="/auth/login/index.html" 
             className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
           >
             Volver al inicio de sesión

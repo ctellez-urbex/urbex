@@ -1,28 +1,38 @@
 "use client";
 
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, memo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/aws/cognito';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import Link from 'next/link';
 
 interface RegisterFormData {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
   phone: string;
+  plan: string;
 }
+
+const planOptions = [
+  { value: 'mensual', label: 'Mensual' },
+  { value: 'semanal', label: 'Semanal' }
+];
 
 const RegisterForm = memo(() => {
   const router = useRouter();
   const [formData, setFormData] = useState<RegisterFormData>({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
-    phone: ''
+    phone: '',
+    plan: ''
   });
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
   const [loading, setLoading] = useState(false);
@@ -31,10 +41,16 @@ const RegisterForm = memo(() => {
   const validateForm = useCallback(() => {
     const newErrors: Partial<RegisterFormData> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'El nombre es requerido';
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'El nombre es requerido';
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = 'El nombre debe tener al menos 2 caracteres';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'El apellido es requerido';
+    } else if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = 'El apellido debe tener al menos 2 caracteres';
     }
 
     if (!formData.email.trim()) {
@@ -45,8 +61,32 @@ const RegisterForm = memo(() => {
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'El teléfono es requerido';
-    } else if (!/^\+?[\d\s\-()]{10,}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Ingresa un número de teléfono válido';
+    } else {
+      // Remove spaces and validate format
+      const cleanPhone = formData.phone.replace(/\s/g, '');
+      
+      // Validate Colombia phone numbers (+57 followed by 10 digits)
+      if (cleanPhone.startsWith('+57')) {
+        const digits = cleanPhone.slice(3);
+        if (digits.length !== 10 || !/^\d{10}$/.test(digits)) {
+          newErrors.phone = 'El número de teléfono debe tener 10 dígitos después del código de país (+57)';
+        }
+      }
+      // Validate Mexico phone numbers (+52 followed by 10 digits)
+      else if (cleanPhone.startsWith('+52')) {
+        const digits = cleanPhone.slice(3);
+        if (digits.length !== 10 || !/^\d{10}$/.test(digits)) {
+          newErrors.phone = 'El número de teléfono debe tener 10 dígitos después del código de país (+52)';
+        }
+      }
+      // Validate other international formats
+      else if (!/^\+[1-9]\d{1,14}$/.test(cleanPhone)) {
+        newErrors.phone = 'Ingresa un número de teléfono válido con código de país (ej: +57 317 890 1234)';
+      }
+    }
+
+    if (!formData.plan) {
+      newErrors.plan = 'Debes seleccionar un plan';
     }
 
     if (!formData.password) {
@@ -68,7 +108,7 @@ const RegisterForm = memo(() => {
   }, [formData]);
 
   const handleInputChange = useCallback((field: keyof RegisterFormData) => 
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const value = field === 'email' ? e.target.value.toLowerCase().trim() : e.target.value;
       setFormData(prev => ({ ...prev, [field]: value }));
       
@@ -82,6 +122,14 @@ const RegisterForm = memo(() => {
     // Remove all non-digit characters except +
     const cleaned = value.replace(/[^\d+]/g, '');
     
+    // If it starts with +57 (Colombia), format accordingly
+    if (cleaned.startsWith('+57')) {
+      const digits = cleaned.slice(3);
+      if (digits.length <= 10) {
+        return `+57 ${digits.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3').trim()}`;
+      }
+    }
+    
     // If it starts with +52 (Mexico), format accordingly
     if (cleaned.startsWith('+52')) {
       const digits = cleaned.slice(3);
@@ -90,6 +138,7 @@ const RegisterForm = memo(() => {
       }
     }
     
+    // For other countries, just return the cleaned value
     return cleaned;
   }, []);
 
@@ -101,6 +150,18 @@ const RegisterForm = memo(() => {
       setErrors(prev => ({ ...prev, phone: undefined }));
     }
   }, [formatPhoneNumber, errors.phone]);
+
+  const formatPhoneForCognito = useCallback((phone: string): string => {
+    // Remove all non-digit characters except +
+    const cleaned = phone.replace(/[^\d+]/g, '');
+    
+    // Ensure it starts with +
+    if (!cleaned.startsWith('+')) {
+      return `+${cleaned}`;
+    }
+    
+    return cleaned;
+  }, []);
 
   const getErrorMessage = (err: Error): string => {
     const message = err.message.toLowerCase();
@@ -127,14 +188,16 @@ const RegisterForm = memo(() => {
 
     try {
       const result = await authService.signUp({
-        name: formData.name.trim(),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
         email: formData.email.trim(),
         password: formData.password,
-        phone: formData.phone.replace(/\s/g, '') // Remove spaces for AWS Cognito
+        phone: formatPhoneForCognito(formData.phone), // Format correctly for AWS Cognito
+        plan: formData.plan
       });
 
       if (result.success) {
-        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
+        router.push(`/auth/verify-email/index.html?email=${encodeURIComponent(formData.email)}`);
       } else {
         setErrors({ email: result.error || 'Error al crear la cuenta' });
       }
@@ -148,32 +211,108 @@ const RegisterForm = memo(() => {
     }
   }, [formData, validateForm, router]);
 
-  const isFormValid = formData.name && formData.email && formData.phone && 
-                     formData.password && formData.confirmPassword && 
-                     Object.keys(errors).length === 0;
+  const isFormValid = useCallback(() => {
+    // Check if all required fields have values
+    const hasAllFields = formData.firstName.trim() && 
+                        formData.lastName.trim() && 
+                        formData.email.trim() && 
+                        formData.phone.trim() && 
+                        formData.plan && 
+                        formData.password && 
+                        formData.confirmPassword;
+    
+    // Check if there are no validation errors
+    const hasNoErrors = Object.keys(errors).length === 0;
+    
+    // Check if passwords match
+    const passwordsMatch = formData.password === formData.confirmPassword;
+    
+    return hasAllFields && hasNoErrors && passwordsMatch;
+  }, [formData, errors]);
+
+  // Auto-clear confirmPassword error when passwords match
+  useEffect(() => {
+    if (formData.password && formData.confirmPassword && 
+        formData.password === formData.confirmPassword && 
+        errors.confirmPassword) {
+      setErrors(prev => ({ ...prev, confirmPassword: undefined }));
+    }
+  }, [formData.password, formData.confirmPassword, errors.confirmPassword]);
+
+  // Auto-clear email error when format is corrected
+  useEffect(() => {
+    if (formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && errors.email) {
+      setErrors(prev => ({ ...prev, email: undefined }));
+    }
+  }, [formData.email, errors.email]);
+
+  // Auto-clear phone error when format is corrected
+  useEffect(() => {
+    if (formData.phone.trim()) {
+      const cleanPhone = formData.phone.replace(/\s/g, '');
+      let isValid = false;
+      
+      if (cleanPhone.startsWith('+57')) {
+        const digits = cleanPhone.slice(3);
+        isValid = digits.length === 10 && /^\d{10}$/.test(digits);
+      } else if (cleanPhone.startsWith('+52')) {
+        const digits = cleanPhone.slice(3);
+        isValid = digits.length === 10 && /^\d{10}$/.test(digits);
+      } else {
+        isValid = /^\+[1-9]\d{1,14}$/.test(cleanPhone);
+      }
+      
+      if (isValid && errors.phone) {
+        setErrors(prev => ({ ...prev, phone: undefined }));
+      }
+    }
+  }, [formData.phone, errors.phone]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <div className="space-y-4">
-        {/* Name Field */}
+        {/* First Name Field */}
         <div>
           <label 
-            htmlFor="name" 
+            htmlFor="firstName" 
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
-            Nombre completo *
+            Nombre *
           </label>
           <Input
-            id="name"
-            name="name"
+            id="firstName"
+            name="firstName"
             type="text"
-            autoComplete="name"
+            autoComplete="given-name"
             required
-            placeholder="Tu nombre completo"
-            value={formData.name}
-            onChange={handleInputChange('name')}
+            placeholder="Tu nombre"
+            value={formData.firstName}
+            onChange={handleInputChange('firstName')}
             disabled={loading}
-            error={errors.name}
+            error={errors.firstName}
+            className="w-full"
+          />
+        </div>
+
+        {/* Last Name Field */}
+        <div>
+          <label 
+            htmlFor="lastName" 
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Apellido *
+          </label>
+          <Input
+            id="lastName"
+            name="lastName"
+            type="text"
+            autoComplete="family-name"
+            required
+            placeholder="Tu apellido"
+            value={formData.lastName}
+            onChange={handleInputChange('lastName')}
+            disabled={loading}
+            error={errors.lastName}
             className="w-full"
           />
         </div>
@@ -215,7 +354,7 @@ const RegisterForm = memo(() => {
             type="tel"
             autoComplete="tel"
             required
-            placeholder="+52 123 456 7890"
+            placeholder="+57 317 890 1234"
             value={formData.phone}
             onChange={handlePhoneChange}
             disabled={loading}
@@ -223,8 +362,30 @@ const RegisterForm = memo(() => {
             className="w-full"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Incluye el código de país (ej: +52 para México)
+            Incluye el código de país (ej: +57 para Colombia)
           </p>
+        </div>
+
+        {/* Plan Field */}
+        <div>
+          <label 
+            htmlFor="plan" 
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Plan *
+          </label>
+          <Select
+            id="plan"
+            name="plan"
+            value={formData.plan}
+            onChange={handleInputChange('plan')}
+            options={planOptions}
+            placeholder="Selecciona un plan"
+            disabled={loading}
+            error={errors.plan}
+            className="w-full"
+            required
+          />
         </div>
 
         {/* Password Field */}
@@ -280,7 +441,7 @@ const RegisterForm = memo(() => {
       <Button
         type="submit"
         variant="primary-blue"
-        disabled={loading || !isFormValid}
+        disabled={loading || !isFormValid()}
         loading={loading}
         className="w-full"
       >

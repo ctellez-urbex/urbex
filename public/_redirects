@@ -5,6 +5,7 @@
 /auth/login /index.html 200
 /auth/* /index.html 200
 /api/* /index.html 200
+/admin/* /index.html 200
 /_next/* /index.html 200
 
 # Handle 404 errors

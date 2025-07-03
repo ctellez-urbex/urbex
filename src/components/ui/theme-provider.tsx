@@ -11,6 +11,9 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
       attribute="class"
       defaultTheme="system"
       enableSystem
+      disableTransitionOnChange={false}
+      storageKey="urbex-theme"
+      themes={['light', 'dark', 'system']}
       {...props}
     >
       {children}

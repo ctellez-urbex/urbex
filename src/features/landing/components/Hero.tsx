@@ -52,6 +52,9 @@ const Hero = memo(() => {
   const [imageSources, setImageSources] = useState<string[]>(
     carouselImages.map(img => img.src)
   );
+  const [imagesLoaded, setImagesLoaded] = useState<boolean[]>(
+    new Array(carouselImages.length).fill(false)
+  );
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -65,6 +68,15 @@ const Hero = memo(() => {
       const newSources = [...prev];
       newSources[index] = carouselImages[index].fallbackSrc;
       return newSources;
+    });
+  }, []);
+
+  // Handle image load
+  const handleImageLoad = useCallback((index: number) => {
+    setImagesLoaded(prev => {
+      const newLoaded = [...prev];
+      newLoaded[index] = true;
+      return newLoaded;
     });
   }, []);
 
@@ -153,9 +165,13 @@ const Hero = memo(() => {
               fill
               sizes="100vw"
               priority={index === 0}
+              loading={index === 0 ? "eager" : "lazy"}
               className="object-cover"
               onError={() => handleImageError(index)}
+              onLoad={() => handleImageLoad(index)}
               unoptimized
+              placeholder="blur"
+              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
             />
           </div>
         ))}

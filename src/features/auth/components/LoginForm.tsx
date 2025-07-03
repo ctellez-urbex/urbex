@@ -20,11 +20,15 @@ const LoginForm = memo(() => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isAccountDisabled, setIsAccountDisabled] = useState(false);
 
   const handleInputChange = useCallback((field: keyof LoginFormData) => 
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setFormData(prev => ({ ...prev, [field]: e.target.value }));
-      if (error) setError(''); // Clear error when user starts typing
+      if (error) {
+        setError(''); // Clear error when user starts typing
+        setIsAccountDisabled(false); // Also clear disabled state
+      }
     }, [error]);
 
 
@@ -40,6 +44,7 @@ const LoginForm = memo(() => {
     }
     
     setError('');
+    setIsAccountDisabled(false);
     setLoading(true);
 
     try {
@@ -48,7 +53,15 @@ const LoginForm = memo(() => {
       console.log('🟡 SignIn result:', result)
       
       if (!result.success) {
-        setError(result.error || 'Error al iniciar sesión');
+        const errorMessage = result.error || 'Error al iniciar sesión';
+        console.log('🟠 [LoginForm] Error recibido del backend:', errorMessage);
+        setError(errorMessage);
+        
+        // Check if account is disabled
+        if (errorMessage.includes('deshabilitada')) {
+          setIsAccountDisabled(true);
+        }
+        
         setLoading(false); // Only set loading false if there's an error
       }
       // Don't set loading false here if success - let redirect happen
@@ -64,6 +77,19 @@ const LoginForm = memo(() => {
       {error && (
         <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          {isAccountDisabled && (
+            <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
+              <p className="text-xs text-blue-600 dark:text-blue-400">
+                💡 <strong>¿Necesitas ayuda?</strong> Contacta al administrador en{' '}
+                <a 
+                  href="mailto:alejandro@urbex.com.co" 
+                  className="underline hover:text-blue-800 dark:hover:text-blue-200"
+                >
+                  alejandro@urbex.com.co
+                </a>
+              </p>
+            </div>
+          )}
         </div>
       )}
       

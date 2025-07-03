@@ -8,6 +8,7 @@ Sitemap: https://urbex.com.co/sitemap.xml
 Disallow: /auth/
 Disallow: /dashboard/
 Disallow: /api/
+Disallow: /admin/
 
 # Allow important pages
 Allow: /

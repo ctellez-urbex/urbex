@@ -11,6 +11,7 @@ const inter = Inter({
   preload: true,
   adjustFontFallback: true,
   fallback: ['system-ui', 'arial'],
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
@@ -79,11 +80,19 @@ export const metadata: Metadata = {
     google: "your-google-verification-code",
     yandex: "your-yandex-verification-code",
   },
+  other: {
+    "X-DNS-Prefetch-Control": "on",
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "origin-when-cross-origin",
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "white" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" }
@@ -96,8 +105,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang="es" suppressHydrationWarning className={inter.variable}>
+      <head>
+        {/* Preload critical resources */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="//cognito-idp.us-east-2.amazonaws.com" />
+        <link rel="dns-prefetch" href="//api.mailgun.net" />
+        
+        {/* Performance meta tags */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+      </head>
+      <body className={`${inter.className} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

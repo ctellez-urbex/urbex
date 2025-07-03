@@ -20,6 +20,10 @@ const customJestConfig = {
     '!src/app/**/not-found.tsx',
     '!src/app/**/loading.tsx',
     '!src/app/**/error.tsx',
+    '!src/test-utils/**/*',
+    '!src/**/__tests__/**/*',
+    '!src/**/*.test.{js,jsx,ts,tsx}',
+    '!src/**/*.spec.{js,jsx,ts,tsx}',
   ],
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
@@ -33,6 +37,19 @@ const customJestConfig = {
     '/node_modules/',
     '^.+\\.module\\.(css|sass|scss)$',
   ],
+  // Add test timeout
+  testTimeout: 10000,
+  // Add verbose output for debugging
+  verbose: true,
+  // Add coverage threshold
+  coverageThreshold: {
+    global: {
+      branches: 50,
+      functions: 50,
+      lines: 50,
+      statements: 50,
+    },
+  },
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
