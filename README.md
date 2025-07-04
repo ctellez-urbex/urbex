@@ -337,7 +337,12 @@ npm run build
 
 2. Desplegar a S3:
 ```bash
-./deploy-spa.sh tu-nombre-de-bucket
+npm run deploy:s3-only
+```
+
+3. Despliegue completo (S3 + CloudFront):
+```bash
+npm run deploy
 ```
 
 ### Configuración de CloudFront

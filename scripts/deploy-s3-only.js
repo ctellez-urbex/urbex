@@ -1,7 +1,20 @@
+#!/usr/bin/env node
+
+/**
+ * Simple S3-Only Deployment Script
+ * 
+ * For testing S3 without CloudFront
+ * 
+ * Usage:
+ *   node scripts/deploy-s3-only.js
+ */
+
 const AWS = require('aws-sdk');
 const fs = require('fs');
 const path = require('path');
 const mime = require('mime-types');
+require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env' });
 
 // Configure AWS
 AWS.config.update({
@@ -11,17 +24,14 @@ AWS.config.update({
 });
 
 const s3 = new AWS.S3();
-const cloudfront = new AWS.CloudFront();
-
 const bucketName = process.env.S3_BUCKET_NAME;
-const distributionId = process.env.CF_DISTRIBUTION_ID;
 
 if (!bucketName) {
   console.error('❌ S3_BUCKET_NAME environment variable is required');
   process.exit(1);
 }
 
-const distDir = path.join(__dirname, '..', 'dist');
+const buildDir = path.join(__dirname, '..', 'out');
 
 // Function to upload a file to S3
 async function uploadFile(filePath, key) {
@@ -91,34 +101,6 @@ async function uploadDirectory(dirPath, prefix = '') {
   return { success: successCount, total: totalCount };
 }
 
-// Function to invalidate CloudFront cache
-async function invalidateCloudFront() {
-  if (!distributionId) {
-    console.log('⚠️  CF_DISTRIBUTION_ID not set, skipping cache invalidation');
-    return;
-  }
-
-  try {
-    const params = {
-      DistributionId: distributionId,
-      InvalidationBatch: {
-        CallerReference: `invalidation-${Date.now()}`,
-        Paths: {
-          Quantity: 1,
-          Items: ['/*']
-        }
-      }
-    };
-
-    const result = await cloudfront.createInvalidation(params).promise();
-    console.log('✅ CloudFront cache invalidation created');
-    console.log(`🆔 Invalidation ID: ${result.Invalidation.Id}`);
-    console.log(`📊 Status: ${result.Invalidation.Status}`);
-  } catch (error) {
-    console.error('❌ Error invalidating CloudFront cache:', error.message);
-  }
-}
-
 // Function to verify S3 bucket configuration
 async function verifyBucketConfig() {
   try {
@@ -126,24 +108,15 @@ async function verifyBucketConfig() {
     await s3.headBucket({ Bucket: bucketName }).promise();
     console.log(`✅ S3 bucket '${bucketName}' is accessible`);
     
-    // Check bucket policy
-    try {
-      const policy = await s3.getBucketPolicy({ Bucket: bucketName }).promise();
-      console.log('✅ Bucket policy is configured');
-    } catch (error) {
-      if (error.code === 'NoSuchBucketPolicy') {
-        console.log('⚠️  No bucket policy found - CloudFront may not work properly');
-      } else {
-        console.log('⚠️  Could not verify bucket policy');
-      }
-    }
-    
-    // Check website configuration
+    // Check if bucket is configured as website
     try {
       const website = await s3.getBucketWebsite({ Bucket: bucketName }).promise();
       console.log('✅ Bucket website configuration found');
+      console.log(`🌐 Website URL: http://${bucketName}.s3-website-${process.env.AWS_REGION || 'us-east-2'}.amazonaws.com`);
     } catch (error) {
-      console.log('⚠️  No website configuration found - this is optional for CloudFront');
+      console.log('⚠️  No website configuration found');
+      console.log('💡 To access via HTTP, configure bucket as website:');
+      console.log(`   aws s3 website s3://${bucketName} --index-document index.html --error-document 404.html`);
     }
     
   } catch (error) {
@@ -163,21 +136,21 @@ async function verifyIndexHtml() {
     return true;
   } catch (error) {
     console.error('❌ index.html not found in S3 bucket root');
-    console.error('This will cause CloudFront to return 404 errors');
     return false;
   }
 }
 
 // Main deployment function
-async function deploy() {
-  console.log('🚀 Starting complete deployment to S3 + CloudFront...');
+async function deployToS3() {
+  console.log('🚀 Starting S3-only deployment...');
   console.log(`📦 Bucket: ${bucketName}`);
-  console.log(`🌐 CloudFront Distribution: ${distributionId || 'Not configured'}`);
-  console.log(`📁 Source: ${distDir}`);
+  console.log(`📁 Source: ${buildDir}/server/app`);
   console.log('');
   
-  if (!fs.existsSync(distDir)) {
-    console.error('❌ dist directory not found. Run npm run build:deploy first.');
+  const appDir = path.join(buildDir, 'server', 'app');
+  
+  if (!fs.existsSync(appDir)) {
+    console.error('❌ app directory not found. Run npm run build first.');
     process.exit(1);
   }
   
@@ -189,7 +162,7 @@ async function deploy() {
     
     // Step 2: Upload all files
     console.log('📤 Uploading files to S3...');
-    const uploadResult = await uploadDirectory(distDir);
+    const uploadResult = await uploadDirectory(appDir);
     console.log(`📊 Upload complete: ${uploadResult.success}/${uploadResult.total} files uploaded successfully`);
     console.log('');
     
@@ -198,38 +171,24 @@ async function deploy() {
     const indexExists = await verifyIndexHtml();
     console.log('');
     
-    // Step 4: Invalidate CloudFront cache
-    if (distributionId) {
-      console.log('🔄 Invalidating CloudFront cache...');
-      await invalidateCloudFront();
+    if (indexExists) {
+      console.log('✅ S3 deployment completed successfully!');
       console.log('');
-    }
-    
-    // Step 5: Summary
-    console.log('🎉 Deployment completed successfully!');
-    console.log('');
-    console.log('📋 Summary:');
-    console.log(`   • Files uploaded: ${uploadResult.success}/${uploadResult.total}`);
-    console.log(`   • index.html in root: ${indexExists ? '✅' : '❌'}`);
-    console.log(`   • CloudFront invalidation: ${distributionId ? '✅' : '⚠️  Not configured'}`);
-    console.log('');
-    console.log('🔗 Next steps:');
-    console.log('   1. Wait for CloudFront invalidation to complete (usually 5-15 minutes)');
-    console.log('   2. Test your CloudFront URL');
-    console.log('   3. Verify all pages load correctly');
-    
-    if (!indexExists) {
+      console.log('🌐 Access your site:');
+      console.log(`   Direct S3: https://${bucketName}.s3.amazonaws.com`);
+      console.log(`   Website URL: http://${bucketName}.s3-website-${process.env.AWS_REGION || 'us-east-2'}.amazonaws.com`);
       console.log('');
-      console.log('⚠️  IMPORTANT: index.html is missing from bucket root!');
-      console.log('   This will cause CloudFront to return 404 errors.');
-      console.log('   Please check the upload process and try again.');
+      console.log('💡 Note: Website URL requires bucket to be configured as website');
+      console.log('   Run: aws s3 website s3://' + bucketName + ' --index-document index.html --error-document 404.html');
+    } else {
+      console.log('⚠️  S3 deployment completed with warnings');
     }
     
   } catch (error) {
-    console.error('❌ Deployment failed:', error.message);
+    console.error('❌ S3 deployment failed:', error.message);
     process.exit(1);
   }
 }
 
 // Run deployment
-deploy(); 
+deployToS3(); 

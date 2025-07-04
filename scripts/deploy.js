@@ -19,6 +19,8 @@ const AWS = require('aws-sdk');
 const fs = require('fs');
 const path = require('path');
 const mime = require('mime-types');
+require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env' });
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -63,81 +65,37 @@ if (!bucketName) {
   process.exit(1);
 }
 
-const sourceDir = path.join(__dirname, '..', '.next');
-const distDir = path.join(__dirname, '..', 'dist');
+const buildDir = path.join(__dirname, '..', 'out');
 
 // ============================================================================
 // FILE PREPARATION FUNCTIONS
 // ============================================================================
 
-function copyStaticFiles() {
-  const staticDir = path.join(sourceDir, 'static');
-  const distStaticDir = path.join(distDir, '_next', 'static');
+function verifyBuildFiles() {
+  console.log('🔍 Verifying build files...');
   
-  if (fs.existsSync(staticDir)) {
-    if (!fs.existsSync(distStaticDir)) {
-      fs.mkdirSync(distStaticDir, { recursive: true });
-    }
-    copyDirectory(staticDir, distStaticDir);
-    console.log('✅ Static files copied');
-  }
-}
-
-function copyPublicFiles() {
-  const publicDir = path.join(__dirname, '..', 'public');
-  if (fs.existsSync(publicDir)) {
-    copyDirectory(publicDir, distDir);
-    console.log('✅ Public files copied');
-  }
-}
-
-function copyIndexHtml() {
-  const indexPath = path.join(sourceDir, 'index.html');
-  const distIndexPath = path.join(distDir, 'index.html');
-  
-  if (fs.existsSync(indexPath)) {
-    fs.copyFileSync(indexPath, distIndexPath);
-    console.log('✅ index.html copied to root');
-  }
-}
-
-function copyServerFiles() {
-  const serverDir = path.join(sourceDir, 'server', 'app');
-  const distServerDir = path.join(distDir, 'server', 'app');
-  
-  if (fs.existsSync(serverDir)) {
-    if (!fs.existsSync(distServerDir)) {
-      fs.mkdirSync(distServerDir, { recursive: true });
-    }
-    
-    const files = fs.readdirSync(serverDir);
-    files.forEach(file => {
-      if (file === 'page.js' || file.endsWith('.js')) {
-        const sourcePath = path.join(serverDir, file);
-        const destPath = path.join(distServerDir, file);
-        fs.copyFileSync(sourcePath, destPath);
-      }
-    });
-    console.log('✅ Server files copied');
-  }
-}
-
-function copyDirectory(src, dest) {
-  if (!fs.existsSync(dest)) {
-    fs.mkdirSync(dest, { recursive: true });
+  if (!fs.existsSync(buildDir)) {
+    console.error('❌ Build directory not found. Run npm run build first.');
+    process.exit(1);
   }
   
-  const entries = fs.readdirSync(src, { withFileTypes: true });
+  // Check for essential files in the correct location
+  const indexHtmlPath = path.join(buildDir, 'server', 'app', 'index.html');
+  if (!fs.existsSync(indexHtmlPath)) {
+    console.error('❌ index.html not found in build directory');
+    console.error('Expected location:', indexHtmlPath);
+    process.exit(1);
+  }
   
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    
-    if (entry.isDirectory()) {
-      copyDirectory(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
+  console.log('✅ Build files verified');
+  console.log(`📁 Build directory: ${buildDir}`);
+  console.log(`📄 Main HTML file: ${indexHtmlPath}`);
+  
+  // List main files
+  const files = fs.readdirSync(buildDir);
+  console.log('📋 Main files found:', files.slice(0, 10).join(', '));
+  if (files.length > 10) {
+    console.log(`   ... and ${files.length - 10} more files`);
   }
 }
 
@@ -148,10 +106,9 @@ function createDeploymentGuide() {
 - \`index.html\` - Main entry point for CloudFront
 - \`_next/static/\` - Static assets (JS, CSS, images)
 - \`public/\` - Public assets (images, favicon, etc.)
-- \`server/app/\` - Server-side files
 
 ## Upload to S3
-1. Upload all files from the \`dist\` folder to your S3 bucket
+1. Upload all files from the \`out\` folder to your S3 bucket
 2. Make sure \`index.html\` is in the root of the bucket
 3. Set the bucket as a static website hosting
 
@@ -170,30 +127,23 @@ function createDeploymentGuide() {
 After deployment, visit your CloudFront URL to verify the site loads correctly.
 `;
 
-  fs.writeFileSync(path.join(distDir, 'DEPLOYMENT.md'), guide);
+  fs.writeFileSync(path.join(buildDir, 'DEPLOYMENT.md'), guide);
   console.log('✅ Deployment guide created');
 }
 
 async function prepareFiles() {
   console.log('🚀 Preparing files for deployment...');
   
-  // Create dist directory if it doesn't exist
-  if (!fs.existsSync(distDir)) {
-    fs.mkdirSync(distDir, { recursive: true });
-  }
-  
   try {
-    copyStaticFiles();
-    copyPublicFiles();
-    copyIndexHtml();
-    copyServerFiles();
+    verifyBuildFiles();
     createDeploymentGuide();
     
     console.log('\n✅ Deployment preparation completed!');
-    console.log(`📁 Files ready in: ${distDir}`);
+    console.log(`📁 Files ready in: ${buildDir}`);
+    console.log('📋 Note: Files are in out/server/app/ structure');
     
     if (isPrepareOnly) {
-      console.log('📋 Upload all files from the dist folder to your S3 bucket');
+      console.log('📋 Upload all files from the out/server/app folder to your S3 bucket');
       console.log('🔗 Make sure index.html is in the root of the bucket');
     }
     
@@ -319,10 +269,12 @@ async function verifyIndexHtml() {
 async function deployToS3() {
   console.log('🚀 Starting S3 deployment...');
   console.log(`📦 Bucket: ${bucketName}`);
-  console.log(`📁 Source: ${distDir}`);
+  console.log(`📁 Source: ${buildDir}/server/app`);
   
-  if (!fs.existsSync(distDir)) {
-    console.error('❌ dist directory not found. Run npm run build:deploy first.');
+  const appDir = path.join(buildDir, 'server', 'app');
+  
+  if (!fs.existsSync(appDir)) {
+    console.error('❌ app directory not found. Run npm run build first.');
     process.exit(1);
   }
   
@@ -332,9 +284,9 @@ async function deployToS3() {
     await verifyBucketConfig();
     console.log('');
     
-    // Upload all files
+    // Upload all files from the app directory
     console.log('📤 Uploading files to S3...');
-    const uploadResult = await uploadDirectory(distDir);
+    const uploadResult = await uploadDirectory(appDir);
     console.log(`📊 Upload complete: ${uploadResult.success}/${uploadResult.total} files uploaded successfully`);
     console.log('');
     
