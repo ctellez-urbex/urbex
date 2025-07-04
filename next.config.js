@@ -4,7 +4,7 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // output: 'export', // Comentado temporalmente
+  output: 'export', // Enable static export for S3 deployment
   distDir: 'out',
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
