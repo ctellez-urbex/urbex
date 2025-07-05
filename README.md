@@ -119,11 +119,36 @@ El dashboard ahora integra datos completos del usuario desde AWS Cognito:
 
 ### Características
 - **AWS Cognito**: Autenticación segura y escalable
+- **API Key Authentication**: Autenticación por API key para todas las APIs
 - **SPA Routing**: Navegación fluida sin recargas
 - **Protección de Rutas**: Acceso controlado a páginas privadas
 - **Persistencia de Sesión**: Mantiene el estado de login
 - **Redirección Automática**: Navegación inteligente según estado
 - **Recuperación de Contraseña**: Sistema completo con Mailgun
+
+### API Key Authentication
+El sistema implementa autenticación por API key para proteger todas las rutas de API:
+
+#### Niveles de Acceso
+- **API_KEY**: Acceso general a la mayoría de endpoints
+- **ADMIN_API_KEY**: Funciones administrativas y de gestión
+- **PUBLIC_API_KEY**: Endpoints públicos (opcional)
+
+#### Implementación
+- **Middleware Automático**: Validación automática en todas las rutas `/api/*`
+- **Headers**: API key enviada en header `x-api-key`
+- **Query Parameters**: Soporte opcional para parámetros de query
+- **Logging**: Registro automático de peticiones y errores de autenticación
+
+#### Configuración
+```bash
+# Variables de entorno requeridas
+API_KEY=your_main_api_key_here
+ADMIN_API_KEY=your_admin_api_key_here
+PUBLIC_API_KEY=your_public_api_key_here
+```
+
+Para más detalles, consulta [docs/api-key-setup.md](docs/api-key-setup.md).
 
 ### Flujo de Autenticación
 1. Usuario accede a `/auth/login`

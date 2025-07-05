@@ -1,0 +1,14 @@
+{
+  "ErrorPages": {
+    "404": {
+      "ErrorCode": "404",
+      "ResponseCode": "200",
+      "ResponsePagePath": "/index.html"
+    },
+    "403": {
+      "ErrorCode": "403", 
+      "ResponseCode": "200",
+      "ResponsePagePath": "/index.html"
+    }
+  }
+} 

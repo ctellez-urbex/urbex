@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import formData from 'form-data';
 import Mailgun from 'mailgun.js';
+import { validateApiKeyForRoute, createSuccessResponse, createErrorResponse, validateRequiredFields, validateEmail, logApiRequest, logApiResponse } from '../../lib/api-utils';
 
 // Initialize Mailgun client
 const mailgun = new Mailgun(formData);
@@ -14,6 +15,20 @@ const mg = process.env.MAILGUN_API_KEY
   : null;
 
 export async function POST(request: Request) {
+  // Log API request for debugging
+  logApiRequest(request as any, 'Contact Form');
+  
+  // Validate API key (optional for contact form - you can set skipAuth: true if you want it public)
+  const authError = validateApiKeyForRoute(request as any, { 
+    apiKeyType: 'API_KEY',
+    skipAuth: false // Set to true if you want contact form to be public
+  });
+  
+  if (authError) {
+    logApiResponse(authError, 'Contact Form - Auth Failed');
+    return authError;
+  }
+
   // Log environment variables (without exposing sensitive data)
   console.log('Environment check:', {
     hasMailgunKey: !!process.env.MAILGUN_API_KEY,
@@ -30,9 +45,10 @@ export async function POST(request: Request) {
       hasDomain: !!process.env.MAILGUN_DOMAIN,
       hasEmail: !!process.env.CONTACT_EMAIL
     });
-    return NextResponse.json(
-      { message: 'Error de configuración del servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      'Error de configuración del servidor',
+      'MAILGUN_CONFIG_MISSING',
+      500
     );
   }
 
@@ -41,20 +57,22 @@ export async function POST(request: Request) {
     const { name, email, phone, message } = body;
 
     // Validate required fields
-    if (!name || !email || !phone || !message) {
-      return NextResponse.json(
-        { message: 'Todos los campos son requeridos' },
-        { status: 400 }
-      );
+    const requiredFieldsError = validateRequiredFields(body, ['name', 'email', 'phone', 'message']);
+    if (requiredFieldsError) {
+      const response = createErrorResponse(requiredFieldsError, 'MISSING_FIELDS', 400);
+      logApiResponse(response, 'Contact Form - Validation Failed');
+      return response;
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { message: 'El formato del correo electrónico no es válido' },
-        { status: 400 }
+    if (!validateEmail(email)) {
+      const response = createErrorResponse(
+        'El formato del correo electrónico no es válido',
+        'INVALID_EMAIL',
+        400
       );
+      logApiResponse(response, 'Contact Form - Validation Failed');
+      return response;
     }
 
     // Prepare email content
@@ -95,10 +113,13 @@ export async function POST(request: Request) {
       message: result.message
     });
 
-    return NextResponse.json(
-      { message: 'Mensaje enviado exitosamente' },
-      { status: 200 }
+    const response = createSuccessResponse(
+      { id: result.id, message: result.message },
+      'Mensaje enviado exitosamente',
+      200
     );
+    logApiResponse(response, 'Contact Form - Success');
+    return response;
   } catch (error) {
     console.error('Error sending email:', error);
     
@@ -111,22 +132,31 @@ export async function POST(request: Request) {
       });
 
       if (error.message.includes('API key')) {
-        return NextResponse.json(
-          { message: 'Error de configuración del servidor' },
-          { status: 500 }
+        const response = createErrorResponse(
+          'Error de configuración del servidor',
+          'MAILGUN_API_ERROR',
+          500
         );
+        logApiResponse(response, 'Contact Form - Mailgun Error');
+        return response;
       }
       if (error.message.includes('domain')) {
-        return NextResponse.json(
-          { message: 'Error de configuración del servidor' },
-          { status: 500 }
+        const response = createErrorResponse(
+          'Error de configuración del servidor',
+          'MAILGUN_DOMAIN_ERROR',
+          500
         );
+        logApiResponse(response, 'Contact Form - Mailgun Error');
+        return response;
       }
     }
     
-    return NextResponse.json(
-      { message: 'Error al enviar el mensaje. Por favor, intenta de nuevo.' },
-      { status: 500 }
+    const response = createErrorResponse(
+      'Error al enviar el mensaje. Por favor, intenta de nuevo.',
+      'EMAIL_SEND_ERROR',
+      500
     );
+    logApiResponse(response, 'Contact Form - General Error');
+    return response;
   }
 } 
