@@ -5,9 +5,10 @@ import { useState, useCallback, memo, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Phone, MapPin, CheckCircle, AlertCircle } from "lucide-react";
+import { sendContactForm } from "@/config/api";
 
 interface ContactFormData {
-  name: string;
+  full_name: string;
   email: string;
   phone: string;
   message: string;
@@ -44,7 +45,7 @@ const contactInfo: ContactInfo[] = [
 const Contact = memo(() => {
   const { theme, resolvedTheme } = useTheme();
   const [formData, setFormData] = useState<ContactFormData>({
-    name: "",
+    full_name: "",
     email: "",
     phone: "",
     message: ""
@@ -61,10 +62,10 @@ const Contact = memo(() => {
   const validateForm = useCallback((): boolean => {
     const newErrors: Partial<ContactFormData> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = "Name must be at least 2 characters";
+    if (!formData.full_name.trim()) {
+      newErrors.full_name = "Name is required";
+    } else if (formData.full_name.trim().length < 2) {
+      newErrors.full_name = "Name must be at least 2 characters";
     }
 
     if (!formData.email.trim()) {
@@ -110,30 +111,11 @@ const Contact = memo(() => {
     setErrors({});
 
     try {
-      const response = await fetch(`${process.env.API_BACKEND_URL}/contact/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": process.env.API_BACKEND_KEY || ""
-        },
-        body: JSON.stringify({
-          ...formData,
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          phone: formData.phone.trim(),
-          message: formData.message.trim(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to send message");
-      }
+      const data = await sendContactForm(formData);
 
       setStatus("success");
       setSubmitMessage("Gracias! Tu mensaje ha sido enviado exitosamente. Nos pondremos en contacto contigo pronto.");
-      setFormData({ name: "", email: "", phone: "", message: "" });
+      setFormData({ full_name: "", email: "", phone: "", message: "" });
     } catch (error) {
       setStatus("error");
       const errorMessage = error instanceof Error ? error.message : "Error al enviar el mensaje. Por favor, inténtalo de nuevo.";
@@ -149,7 +131,7 @@ const Contact = memo(() => {
   }, []);
 
   const isFormValid = useMemo(() => 
-    formData.name.trim() && 
+    formData.full_name.trim() && 
     formData.email.trim() && 
     formData.message.trim() && 
     Object.keys(errors).length === 0,
@@ -287,7 +269,7 @@ const Contact = memo(() => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label 
-                    htmlFor="name" 
+                    htmlFor="full_name" 
                     className={`block text-sm font-medium mb-2 ${
                       isDark ? 'text-gray-200' : 'text-gray-700'
                     }`}
@@ -295,15 +277,15 @@ const Contact = memo(() => {
                     Nombre completo *
                   </label>
                   <Input
-                    id="name"
-                    name="name"
+                    id="full_name"
+                    name="full_name"
                     type="text"
                     required
                     placeholder="Nombre completo"
-                    value={formData.name}
-                    onChange={handleInputChange('name')}
+                    value={formData.full_name}
+                    onChange={handleInputChange('full_name')}
                     disabled={status === "sending"}
-                    error={errors.name}
+                    error={errors.full_name}
                     className="w-full"
                   />
                 </div>

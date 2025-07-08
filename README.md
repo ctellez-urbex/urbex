@@ -126,6 +126,59 @@ El dashboard ahora integra datos completos del usuario desde AWS Cognito:
 - **Redirección Automática**: Navegación inteligente según estado
 - **Recuperación de Contraseña**: Sistema completo con Mailgun
 
+## 🌐 APIs Externas
+
+### Configuración
+El frontend está desplegado en S3 (contenido estático) y se comunica con APIs externas. Las variables de entorno deben estar disponibles en el frontend usando el prefijo `NEXT_PUBLIC_*`.
+
+### Variables de Entorno Requeridas
+
+#### Frontend (.env.local)
+```bash
+# API Externa Configuration
+NEXT_PUBLIC_API_BASE_URL=https://api.urbex.com.co
+NEXT_PUBLIC_API_KEY=tu_api_key_externa_aqui
+
+# AWS Configuration
+NEXT_PUBLIC_AWS_REGION=us-east-2
+NEXT_PUBLIC_AWS_USER_POOL_ID=us-east-2_Fpda5LMX0
+NEXT_PUBLIC_AWS_POOL_CLIENT_ID=tu_cognito_client_id
+```
+
+#### Backend (API Externa)
+```bash
+# API Keys
+API_KEY=tu_api_key_principal_aqui
+ADMIN_API_KEY=tu_api_key_admin_aqui
+PUBLIC_API_KEY=tu_api_key_publica_aqui
+
+# AWS Configuration
+AWS_REGION=us-east-2
+AWS_ACCESS_KEY_ID=tu_aws_access_key
+AWS_SECRET_ACCESS_KEY=tu_aws_secret_key
+AWS_USER_POOL_ID=us-east-2_Fpda5LMX0
+AWS_POOL_CLIENT_ID=tu_cognito_client_id
+
+# Mailgun Configuration
+MAILGUN_API_KEY=tu_mailgun_api_key
+MAILGUN_DOMAIN=tu_mailgun_domain
+CONTACT_EMAIL=contact@urbex.com.co
+```
+
+### Generación de API Keys
+```bash
+# Generar API keys para desarrollo
+node scripts/generate-api-keys.js --env=development
+
+# Generar API keys para staging
+node scripts/generate-api-keys.js --env=staging
+
+# Generar API keys para producción
+node scripts/generate-api-keys.js --env=production
+```
+
+Para más detalles, consulta [docs/frontend-env-setup.md](docs/frontend-env-setup.md).
+
 ### API Key Authentication
 El sistema implementa autenticación por API key para proteger todas las rutas de API:
 
