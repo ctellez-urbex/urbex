@@ -110,15 +110,17 @@ const Contact = memo(() => {
     setErrors({});
 
     try {
-      const response = await fetch("/api/contact", {
+      const response = await fetch(`${process.env.API_BACKEND_URL}/contact/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-api-key": process.env.API_BACKEND_KEY || ""
         },
         body: JSON.stringify({
           ...formData,
           name: formData.name.trim(),
           email: formData.email.trim(),
+          phone: formData.phone.trim(),
           message: formData.message.trim(),
         }),
       });
