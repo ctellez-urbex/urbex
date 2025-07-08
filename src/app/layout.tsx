@@ -116,6 +116,9 @@ export default function RootLayout({
         {/* Performance meta tags */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        
+        {/* Environment Configuration - Load before any other scripts */}
+        <script src="/env.js" />
       </head>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider

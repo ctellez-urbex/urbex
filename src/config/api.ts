@@ -1,34 +1,46 @@
 /**
- * API Configuration
+ * API Configuration for External APIs
  * 
- * Configuración centralizada para las APIs externas
- * Estas variables deben estar disponibles en el frontend (NEXT_PUBLIC_*)
+ * Configuración simplificada para llamar APIs externas
+ * Compatible con S3 + CloudFront (contenido estático)
  */
+
+// Helper function to get environment variables from static file
+function getStaticEnvVar(key: string, fallback: string = ''): string {
+  // Try to get from window.ENV (static file)
+  if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
+    return window.ENV[key];
+  }
+  
+  // Fallback to process.env (for development)
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key];
+  }
+  
+  return fallback;
+}
+
+// Helper function to check if API is configured
+function isApiConfigured(): boolean {
+  const apiUrl = getStaticEnvVar('NEXT_PUBLIC_API_BASE_URL');
+  const apiKey = getStaticEnvVar('NEXT_PUBLIC_API_KEY');
+  
+  return !!(apiUrl && apiKey && 
+           !apiUrl.includes('your_') && !apiUrl.includes('tu_') &&
+           !apiKey.includes('your_') && !apiKey.includes('tu_'));
+}
 
 export const API_CONFIG = {
   // URL base de la API externa
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.urbex.com.co',
+  BASE_URL: getStaticEnvVar('NEXT_PUBLIC_API_BASE_URL', 'https://api.urbex.com.co'),
   
   // API Key para autenticación
-  API_KEY: process.env.NEXT_PUBLIC_API_KEY || '',
+  API_KEY: getStaticEnvVar('NEXT_PUBLIC_API_KEY', ''),
   
   // Endpoints específicos
   ENDPOINTS: {
     CONTACT: '/contact',
-    HEALTH: '/health',
-    AUTH: {
-      CONFIRM_SIGNUP: '/auth/confirm-signup',
-      FORGOT_PASSWORD: '/auth/forgot-password',
-      RESET_PASSWORD: '/auth/reset-password'
-    },
-    ADMIN: {
-      USERS: '/admin/users',
-      USER: (id: string) => `/admin/users/${id}`,
-      DISABLE_USER: (id: string) => `/admin/users/${id}/disable`
-    },
-    USER: {
-      ATTRIBUTES: '/user/attributes'
-    }
+    HEALTH: '/health'
   }
 } as const;
 
@@ -101,44 +113,16 @@ export async function healthCheck() {
   return apiRequest(API_CONFIG.ENDPOINTS.HEALTH);
 }
 
-/**
- * Función para confirmar registro
- * 
- * @param email - Email del usuario
- * @param code - Código de verificación
- * @returns Promise con la respuesta
- */
-export async function confirmSignup(email: string, code: string) {
-  return apiRequest(API_CONFIG.ENDPOINTS.AUTH.CONFIRM_SIGNUP, {
-    method: 'POST',
-    body: JSON.stringify({ email, code })
+// Log API configuration
+if (typeof window !== 'undefined') {
+  console.log('🔗 API Configuration:', {
+    baseUrl: API_CONFIG.BASE_URL,
+    hasApiKey: !!API_CONFIG.API_KEY,
+    isConfigured: isApiConfigured(),
+    environment: getStaticEnvVar('NODE_ENV', 'production')
   });
-}
-
-/**
- * Función para solicitar reset de contraseña
- * 
- * @param email - Email del usuario
- * @returns Promise con la respuesta
- */
-export async function forgotPassword(email: string) {
-  return apiRequest(API_CONFIG.ENDPOINTS.AUTH.FORGOT_PASSWORD, {
-    method: 'POST',
-    body: JSON.stringify({ email })
-  });
-}
-
-/**
- * Función para resetear contraseña
- * 
- * @param email - Email del usuario
- * @param code - Código de verificación
- * @param newPassword - Nueva contraseña
- * @returns Promise con la respuesta
- */
-export async function resetPassword(email: string, code: string, newPassword: string) {
-  return apiRequest(API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD, {
-    method: 'POST',
-    body: JSON.stringify({ email, code, newPassword })
-  });
+  
+  if (!isApiConfigured()) {
+    console.warn('⚠️  API is not properly configured. Check your /public/env.js file.');
+  }
 } 

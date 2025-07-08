@@ -128,56 +128,68 @@ El dashboard ahora integra datos completos del usuario desde AWS Cognito:
 
 ## 🌐 APIs Externas
 
+### Configuración para S3 + CloudFront
+El frontend está desplegado en **S3 + CloudFront** (contenido estático) y se comunica con **APIs externas**. Las variables de entorno se manejan a través de un archivo de configuración estático.
+
 ### Configuración
-El frontend está desplegado en S3 (contenido estático) y se comunica con APIs externas. Las variables de entorno deben estar disponibles en el frontend usando el prefijo `NEXT_PUBLIC_*`.
 
-### Variables de Entorno Requeridas
-
-#### Frontend (.env.local)
+#### **1. Generar Configuración**
 ```bash
-# API Externa Configuration
-NEXT_PUBLIC_API_BASE_URL=https://api.urbex.com.co
-NEXT_PUBLIC_API_KEY=tu_api_key_externa_aqui
+# Para producción
+npm run env:generate -- --env=production
 
-# AWS Configuration
-NEXT_PUBLIC_AWS_REGION=us-east-2
-NEXT_PUBLIC_AWS_USER_POOL_ID=us-east-2_Fpda5LMX0
-NEXT_PUBLIC_AWS_POOL_CLIENT_ID=tu_cognito_client_id
+# Para staging
+npm run env:generate -- --env=staging
+
+# Para desarrollo
+npm run env:generate -- --env=development
 ```
 
-#### Backend (API Externa)
-```bash
-# API Keys
-API_KEY=tu_api_key_principal_aqui
-ADMIN_API_KEY=tu_api_key_admin_aqui
-PUBLIC_API_KEY=tu_api_key_publica_aqui
+#### **2. Editar Archivo de Configuración**
+Edita `/public/env.js` con tus valores reales:
 
-# AWS Configuration
-AWS_REGION=us-east-2
-AWS_ACCESS_KEY_ID=tu_aws_access_key
-AWS_SECRET_ACCESS_KEY=tu_aws_secret_key
-AWS_USER_POOL_ID=us-east-2_Fpda5LMX0
-AWS_POOL_CLIENT_ID=tu_cognito_client_id
-
-# Mailgun Configuration
-MAILGUN_API_KEY=tu_mailgun_api_key
-MAILGUN_DOMAIN=tu_mailgun_domain
-CONTACT_EMAIL=contact@urbex.com.co
+```javascript
+// /public/env.js
+window.ENV = {
+  // API Externa Configuration
+  NEXT_PUBLIC_API_BASE_URL: 'https://api.urbex.com.co',
+  NEXT_PUBLIC_API_KEY: 'tu_api_key_real_aqui',
+  
+  // AWS Configuration
+  NEXT_PUBLIC_AWS_REGION: 'us-east-2',
+  NEXT_PUBLIC_AWS_USER_POOL_ID: 'us-east-2_Fpda5LMX0',
+  NEXT_PUBLIC_AWS_POOL_CLIENT_ID: 'tu_cognito_client_id_real',
+  
+  // Application Configuration
+  NEXT_PUBLIC_APP_NAME: 'Urbex',
+  NEXT_PUBLIC_APP_URL: 'https://urbex.com.co',
+  
+  // Environment
+  NODE_ENV: 'production'
+};
 ```
 
-### Generación de API Keys
+### Scripts Disponibles
+
 ```bash
-# Generar API keys para desarrollo
-node scripts/generate-api-keys.js --env=development
+# Generar configuración de entorno
+npm run env:generate -- --env=production
 
-# Generar API keys para staging
-node scripts/generate-api-keys.js --env=staging
-
-# Generar API keys para producción
-node scripts/generate-api-keys.js --env=production
+# Build con configuración automática
+npm run build:dev      # development
+npm run build:staging  # staging
+npm run build          # production
 ```
 
-Para más detalles, consulta [docs/frontend-env-setup.md](docs/frontend-env-setup.md).
+### Verificación
+
+Abre las **Developer Tools** (F12) y revisa la **Console**:
+```javascript
+// Deberías ver:
+🔗 API Configuration: {baseUrl: "https://api.urbex.com.co", hasApiKey: true, ...}
+```
+
+Para más detalles, consulta [docs/s3-static-env-setup.md](docs/s3-static-env-setup.md).
 
 ### API Key Authentication
 El sistema implementa autenticación por API key para proteger todas las rutas de API:

@@ -1,33 +1,33 @@
 # API Keys for Production Environment
 
-Generated on: 2025-07-08T14:15:44.039Z
+Generated on: 2025-07-08T21:52:18.115Z
 
 ## 🔑 Generated API Keys
 
 ### Main API Key
 ```bash
-API_KEY=prod_yZn-M3_xQ2PNILlRNEWDnKHYSt_0ht6F8AOSaMfOBlkdoyU563c81JSgWOsc0SHp5fxGE02v9Rj6se8toH1wzw
+API_KEY=prod_DTMuGR8JOSwKBdujtm3SRCM_fySYUpr8K-vNBCD7ZHoxxOd0xoT4cRhWeBdrcuHziXwQkbBTQnY0PgniyAkh-g
 ```
 
 **Usage**: General API access, most endpoints
 
 ### Admin API Key
 ```bash
-ADMIN_API_KEY=prod_admin_7sIt-s36BSD9T-aS75fdDrStYX1uLHyGILtJrHswyrF0eYub8AAkE0tXGyWttu9kxi_VuVUZETc6gwajTTBD3A
+ADMIN_API_KEY=prod_admin_Y5Qn0jjnqZsYx5Kay7dKYGOEO6uWEH7awfTuE_x69bCrk4yI1GAhC1I3V4oqIh8H4q3QtUkx9T8opJnyqUqSYg
 ```
 
 **Usage**: Administrative operations, user management
 
 ### Public API Key
 ```bash
-PUBLIC_API_KEY=prod_public_PKSq2_rjPjPsR1oF-VP2ohBjGXWZQPxEB7g2zPbVYVCweWWELWVakpbx44PR8o29lisrGvMeF3ghkQ04zdzu0A
+PUBLIC_API_KEY=prod_public_FGPY_YOzWZqWEdTfd8uZCZP1jbGJ2WLb3L5nk4QGxNvdpMzIy0go5kSA4ru-P1nF1r-Sv13n3P8aJ0uBj1y3tw
 ```
 
 **Usage**: Public endpoints, contact forms
 
 ### Frontend API Key
 ```bash
-NEXT_PUBLIC_API_KEY=prod_frontend_Q61qCPrJZ2j3NAZkOyVH8uqQAjVf30j7b-dmY4219QDU-VuCMtFbjQHQO4r_CbfW3Ki0sDfOk1sPMoWzYv_Fmw
+NEXT_PUBLIC_API_KEY=prod_frontend_PBl_uMePPwOQS1drplVjcKMZIPaBVQdAOMmnSsWCqM_R-orYCq_kQ1bwPw3sOtJigKJqXJJju6kzE3o0zedXaA
 ```
 
 **Usage**: Client-side requests, must be prefixed with NEXT_PUBLIC_
@@ -69,7 +69,7 @@ const validateApiKey = (req, res, next) => {
 ```bash
 curl -X POST https://api.urbex.com.co/contact \
   -H "Content-Type: application/json" \
-  -H "x-api-key: prod_frontend_Q61qCPrJZ2j3NAZkOyVH8uqQAjVf30j7b-dmY4219QDU-VuCMtFbjQHQO4r_CbfW3Ki0sDfOk1sPMoWzYv_Fmw" \
+  -H "x-api-key: prod_frontend_PBl_uMePPwOQS1drplVjcKMZIPaBVQdAOMmnSsWCqM_R-orYCq_kQ1bwPw3sOtJigKJqXJJju6kzE3o0zedXaA" \
   -d '{
     "name": "Test User",
     "email": "test@example.com",

@@ -6,6 +6,9 @@ frontend:
         - npm ci
     build:
       commands:
+        - echo "Generating environment configuration for static frontend..."
+        - npm run env:generate -- --env=production
+        - echo "Building Next.js application..."
         - npm run build
   artifacts:
     baseDirectory: .next
