@@ -322,7 +322,7 @@ const Contact = memo(() => {
                     name="email"
                     type="email"
                     required
-                    placeholder="tu@email.com"
+                    placeholder="tu@urbex.com.co"
                     value={formData.email}
                     onChange={handleInputChange('email')}
                     disabled={status === "sending"}

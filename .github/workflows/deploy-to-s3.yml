@@ -33,6 +33,8 @@ jobs:
         AWS_REGION: ${{ secrets.AWS_REGION }}
         AWS_USER_POOL_ID: ${{ secrets.AWS_USER_POOL_ID }}
         AWS_POOL_CLIENT_ID: ${{ secrets.AWS_POOL_CLIENT_ID }}
+        API_BACKEND_URL: ${{ secrets.API_BACKEND_URL }}
+        API_BACKEND_KEY: ${{ secrets.API_BACKEND_KEY }}
         SOURCE_DIR: 'out'
 
     - name: Invalidate CloudFront cache
