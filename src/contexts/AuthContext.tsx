@@ -71,10 +71,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const profileResult = await getUserProfile(storedUser.token);
           if (profileResult.success && profileResult.data) {
             console.log('🔍 Got fresh user data from API');
-            setUser({
-              ...profileResult.data,
+            const freshUserData = {
+              email: profileResult.data.email,
+              name: profileResult.data.name || profileResult.data.email.split('@')[0],
+              first_name: profileResult.data.first_name,
+              last_name: profileResult.data.last_name,
+              phone_number: profileResult.data.phone_number,
+              su: profileResult.data.su,
+              plan: profileResult.data.plan,
               token: storedUser.token
-            });
+            };
+            console.log('🔍 Setting fresh user data:', freshUserData);
+            setUser(freshUserData);
+            saveUserToStorage(freshUserData);
           } else {
             console.log('❌ Failed to get fresh user data, using stored data');
             setUser(storedUser);

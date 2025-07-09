@@ -88,26 +88,28 @@ src/
 - **QuickActions**: Acciones rápidas disponibles
 
 ### Dashboard - Datos del Usuario
-El dashboard ahora integra datos completos del usuario desde AWS Cognito:
+El dashboard integra datos completos del usuario desde la API externa:
 
 #### Campos Mostrados
 - **Email**: Dirección de correo electrónico del usuario
-- **Nombre**: Campo `first_name` de Cognito
-- **Apellido**: Campo `last_name` de Cognito  
-- **SU (Custom)**: Campo personalizado `custom:su` de Cognito
-- **Plan**: Campo personalizado `custom:plan` de Cognito
+- **Nombre**: Campo `first_name` del usuario
+- **Apellido**: Campo `last_name` del usuario  
+- **Teléfono**: Campo `phone_number` del usuario
+- **Plan**: Campo `plan` del usuario
+- **SU**: Campo `su` del usuario (para permisos de administración)
 
 #### Funcionalidades
 - **Carga Automática**: Los datos se cargan automáticamente al iniciar sesión
-- **Botón de Actualización**: Permite refrescar los datos desde Cognito en tiempo real
-- **Fallback**: Si no se pueden obtener los datos de Cognito, usa datos locales
+- **Botón de Actualización**: Permite refrescar los datos desde la API en tiempo real
+- **Fallback**: Si no se pueden obtener los datos de la API, usa datos locales
 - **Interfaz Responsiva**: Diseño adaptativo para diferentes tamaños de pantalla
 
 #### Integración Técnica
-- **AuthContext**: Gestiona el estado del usuario con todos los campos de Cognito
-- **Cognito Service**: Función `getUserAttributes()` para obtener atributos del usuario
+- **AuthContext**: Gestiona el estado del usuario con todos los campos de la API
+- **API Integration**: Función `getUserProfile()` para obtener datos del usuario
 - **Persistencia**: Los datos se guardan en localStorage como respaldo
 - **Actualización en Tiempo Real**: Función `refreshUserData()` para actualizar datos
+- **API Key Authentication**: Todas las peticiones incluyen el API key requerido
 
 ### Administración de Usuarios
 - **UserList**: Tabla de usuarios con paginación y filtros
@@ -127,6 +129,22 @@ El dashboard ahora integra datos completos del usuario desde AWS Cognito:
 - **Recuperación de Contraseña**: Sistema completo con Mailgun
 
 ## 🌐 APIs Externas
+
+### Integración con API Externa
+El frontend se comunica con una **API externa** para todas las operaciones de autenticación y gestión de usuarios. La API está desplegada en AWS API Gateway y utiliza autenticación por API key.
+
+#### Endpoints Integrados
+- **POST /auth/login**: Inicio de sesión de usuarios
+- **POST /auth/register**: Registro de nuevos usuarios
+- **POST /auth/verify-email**: Verificación de email
+- **POST /auth/forgot-password**: Solicitud de reset de contraseña
+- **POST /auth/reset-password**: Confirmación de reset de contraseña
+- **GET /auth/me**: Obtener perfil del usuario autenticado
+
+#### Autenticación
+- **API Key**: Todas las peticiones incluyen el header `x-api-key`
+- **Bearer Token**: Para endpoints protegidos se incluye el header `Authorization: Bearer <token>`
+- **CORS**: Configurado para permitir peticiones desde el dominio del frontend
 
 ### Configuración para S3 + CloudFront
 El frontend está desplegado en **S3 + CloudFront** (contenido estático) y se comunica con **APIs externas**. Las variables de entorno se manejan a través de un archivo de configuración estático.
