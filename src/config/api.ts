@@ -41,7 +41,7 @@ export const API_CONFIG = {
   ENDPOINTS: {
     CONTACT: '/contact/',
     HEALTH: '/health',
-    LOGIN: '/auth/login/',
+    LOGIN: '/auth/login',
     REGISTER: '/auth/register/',
     VERIFY_EMAIL: '/auth/verify-email/',
     FORGOT_PASSWORD: '/auth/forgot-password/',
