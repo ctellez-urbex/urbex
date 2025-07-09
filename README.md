@@ -485,7 +485,7 @@ Desarrollado con ❤️ por el Equipo Urbex
 
    # API Configuration
    NEXT_PUBLIC_API_BASE_URL=https://eo6cj32bch.execute-api.us-east-2.amazonaws.com/prod/api/v1
-   NEXT_PUBLIC_API_KEY=your_api_key_here
+   NEXT_PUBLIC_API_KEY=09mLQ6KO1k6vadXSBQWVR8JvLMH40oPw2HIRTZyW
    ```
 
 3. **Importante**: Nunca subas el archivo `.env.local` a GitHub. Este archivo contiene información sensible.

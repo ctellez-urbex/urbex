@@ -27,7 +27,7 @@ PUBLIC_API_KEY=prod_public_FGPY_YOzWZqWEdTfd8uZCZP1jbGJ2WLb3L5nk4QGxNvdpMzIy0go5
 
 ### Frontend API Key
 ```bash
-NEXT_PUBLIC_API_KEY=prod_frontend_PBl_uMePPwOQS1drplVjcKMZIPaBVQdAOMmnSsWCqM_R-orYCq_kQ1bwPw3sOtJigKJqXJJju6kzE3o0zedXaA
+NEXT_PUBLIC_API_KEY=09mLQ6KO1k6vadXSBQWVR8JvLMH40oPw2HIRTZyW
 ```
 
 **Usage**: Client-side requests, must be prefixed with NEXT_PUBLIC_
@@ -67,9 +67,9 @@ const validateApiKey = (req, res, next) => {
 
 ### cURL Example
 ```bash
-curl -X POST https://api.urbex.com.co/contact \
+curl -X POST https://eo6cj32bch.execute-api.us-east-2.amazonaws.com/prod/api/v1/contact/ \
   -H "Content-Type: application/json" \
-  -H "x-api-key: prod_frontend_PBl_uMePPwOQS1drplVjcKMZIPaBVQdAOMmnSsWCqM_R-orYCq_kQ1bwPw3sOtJigKJqXJJju6kzE3o0zedXaA" \
+  -H "x-api-key: 09mLQ6KO1k6vadXSBQWVR8JvLMH40oPw2HIRTZyW" \
   -d '{
     "name": "Test User",
     "email": "test@example.com",
