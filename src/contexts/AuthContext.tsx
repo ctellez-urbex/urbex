@@ -186,13 +186,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (profileResult.success && profileResult.data) {
           console.log('🔄 Processing refresh data:', profileResult.data);
           const userInfo = {
-            email: profileResult.data.user.email,
-            name: profileResult.data.user.name || profileResult.data.user.email.split('@')[0],
-            first_name: profileResult.data.user.first_name,
-            last_name: profileResult.data.user.last_name,
-            phone_number: profileResult.data.user.phone_number,
-            su: profileResult.data.user.su,
-            plan: profileResult.data.user.plan,
+            email: profileResult.data.email,
+            name: profileResult.data.name || profileResult.data.email.split('@')[0],
+            first_name: profileResult.data.first_name,
+            last_name: profileResult.data.last_name,
+            phone_number: profileResult.data.phone_number,
+            su: profileResult.data.su,
+            plan: profileResult.data.plan,
             token: user.token
           }
           console.log('🔄 Final refresh userInfo:', userInfo);
