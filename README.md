@@ -484,10 +484,32 @@ Desarrollado con ❤️ por el Equipo Urbex
    CONTACT_EMAIL=email-donde-recibir-los-mensajes
 
    # API Configuration
-   NEXT_PUBLIC_API_URL=tu-api-url
+   NEXT_PUBLIC_API_BASE_URL=https://eo6cj32bch.execute-api.us-east-2.amazonaws.com/prod/api/v1
+   NEXT_PUBLIC_API_KEY=your_api_key_here
    ```
 
 3. **Importante**: Nunca subas el archivo `.env.local` a GitHub. Este archivo contiene información sensible.
+
+### 🔗 Configuración de API
+
+#### URL de la API
+La aplicación utiliza la siguiente URL de API para producción:
+```
+https://eo6cj32bch.execute-api.us-east-2.amazonaws.com/prod/api/v1
+```
+
+#### Endpoints Disponibles
+- `POST /contact` - Formulario de contacto
+- `GET /health` - Health check
+
+#### Autenticación
+Todas las peticiones a la API requieren un API key que debe enviarse en el header `x-api-key`.
+
+#### Solución de CORS
+Si experimentas errores de CORS, verifica que:
+1. La URL de la API esté correctamente configurada en `.env.production`
+2. El API key sea válido
+3. El endpoint esté disponible en la API
 
 ### Obtener Credenciales de Mailgun
 1. Regístrate en [Mailgun](https://www.mailgun.com/)

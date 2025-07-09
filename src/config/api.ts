@@ -32,14 +32,14 @@ function isApiConfigured(): boolean {
 
 export const API_CONFIG = {
   // URL base de la API externa
-  BASE_URL: getStaticEnvVar('NEXT_PUBLIC_API_BASE_URL', 'https://api.urbex.com.co'),
+  BASE_URL: getStaticEnvVar('NEXT_PUBLIC_API_BASE_URL', 'https://eo6cj32bch.execute-api.us-east-2.amazonaws.com/prod/api/v1'),
   
   // API Key para autenticación
   API_KEY: getStaticEnvVar('NEXT_PUBLIC_API_KEY', ''),
   
   // Endpoints específicos
   ENDPOINTS: {
-    CONTACT: '/contact',
+    CONTACT: '/contact/',
     HEALTH: '/health'
   }
 } as const;

@@ -80,7 +80,7 @@ function verifyBuildFiles() {
   }
   
   // Check for essential files in the correct location
-  const indexHtmlPath = path.join(buildDir, 'server', 'app', 'index.html');
+  const indexHtmlPath = path.join(buildDir, 'index.html');
   if (!fs.existsSync(indexHtmlPath)) {
     console.error('❌ index.html not found in build directory');
     console.error('Expected location:', indexHtmlPath);
@@ -140,10 +140,10 @@ async function prepareFiles() {
     
     console.log('\n✅ Deployment preparation completed!');
     console.log(`📁 Files ready in: ${buildDir}`);
-    console.log('📋 Note: Files are in out/server/app/ structure');
+    console.log('📋 Note: Files are in out/ structure');
     
     if (isPrepareOnly) {
-      console.log('📋 Upload all files from the out/server/app folder to your S3 bucket');
+      console.log('📋 Upload all files from the out/ folder to your S3 bucket');
       console.log('🔗 Make sure index.html is in the root of the bucket');
     }
     
@@ -269,9 +269,9 @@ async function verifyIndexHtml() {
 async function deployToS3() {
   console.log('🚀 Starting S3 deployment...');
   console.log(`📦 Bucket: ${bucketName}`);
-  console.log(`📁 Source: ${buildDir}/server/app`);
+  console.log(`📁 Source: ${buildDir}`);
   
-  const appDir = path.join(buildDir, 'server', 'app');
+  const appDir = buildDir;
   
   if (!fs.existsSync(appDir)) {
     console.error('❌ app directory not found. Run npm run build first.');

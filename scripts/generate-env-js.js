@@ -40,11 +40,11 @@ const ENV_CONFIGS = {
     NODE_ENV: 'staging'
   },
   production: {
-    NEXT_PUBLIC_API_BASE_URL: 'https://api.urbex.com.co',
-    NEXT_PUBLIC_API_KEY: 'prod_api_key_here',
+    NEXT_PUBLIC_API_BASE_URL: 'https://eo6cj32bch.execute-api.us-east-2.amazonaws.com/prod/api/v1',
+    NEXT_PUBLIC_API_KEY: '09mLQ6KO1k6vadXSBQWVR8JvLMH40oPw2HIRTZyW',
     NEXT_PUBLIC_AWS_REGION: 'us-east-2',
     NEXT_PUBLIC_AWS_USER_POOL_ID: 'us-east-2_Fpda5LMX0',
-    NEXT_PUBLIC_AWS_POOL_CLIENT_ID: 'prod_client_id_here',
+    NEXT_PUBLIC_AWS_POOL_CLIENT_ID: '5kvmdd29oj2lpnq9b4j60gfe69',
     NEXT_PUBLIC_APP_NAME: 'Urbex',
     NEXT_PUBLIC_APP_URL: 'https://urbex.com.co',
     NODE_ENV: 'production'
