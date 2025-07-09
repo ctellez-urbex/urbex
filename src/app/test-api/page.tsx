@@ -1,89 +1,125 @@
 "use client";
 
 import { useState } from 'react';
+import { loginUser, healthCheck, sendContactForm } from '@/config/api';
 
-export default function TestAPIPage() {
-  const [email, setEmail] = useState('');
-  const [result, setResult] = useState('');
+export default function TestApiPage() {
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const testCognito = async () => {
+  const testHealthCheck = async () => {
     setLoading(true);
+    setError(null);
+    setResult(null);
+    
     try {
-      const response = await fetch('/api/auth/test-cognito');
-      const data = await response.json();
-      setResult(JSON.stringify(data, null, 2));
-    } catch (error) {
-      setResult(`Error: ${error}`);
+      const response = await healthCheck();
+      setResult(response);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
       setLoading(false);
     }
   };
 
-  const testForgotPassword = async () => {
-    if (!email) {
-      setResult('Please enter an email address');
-      return;
-    }
-    
+  const testLogin = async () => {
     setLoading(true);
+    setError(null);
+    setResult(null);
+    
     try {
-      const response = await fetch('/api/auth/forgot-password/index.html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
+      const response = await loginUser({
+        email: 'test@example.com',
+        password: 'testpassword123'
       });
-      const data = await response.json();
-      setResult(JSON.stringify(data, null, 2));
-    } catch (error) {
-      setResult(`Error: ${error}`);
+      setResult(response);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testContactForm = async () => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    
+    try {
+      const response = await sendContactForm({
+        full_name: 'Test User',
+        email: 'test@example.com',
+        phone: '+1234567890',
+        message: 'This is a test message'
+      });
+      setResult(response);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">API Test Page</h1>
-      
-      <div className="space-y-4">
-        <div>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md mx-auto">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">
+            Test API Endpoints
+          </h1>
+        </div>
+
+        <div className="space-y-4">
           <button
-            onClick={testCognito}
+            onClick={testHealthCheck}
             disabled={loading}
-            className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Testing...' : 'Test Cognito Connection'}
+            {loading ? 'Testing...' : 'Test Health Check'}
           </button>
-        </div>
-        
-        <div>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter email to test forgot password"
-            className="border p-2 rounded w-full"
-          />
+
           <button
-            onClick={testForgotPassword}
-            disabled={loading || !email}
-            className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50 mt-2"
+            onClick={testLogin}
+            disabled={loading}
+            className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50"
           >
-            {loading ? 'Testing...' : 'Test Forgot Password'}
+            {loading ? 'Testing...' : 'Test Login API'}
+          </button>
+
+          <button
+            onClick={testContactForm}
+            disabled={loading}
+            className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:opacity-50"
+          >
+            {loading ? 'Testing...' : 'Test Contact Form'}
           </button>
         </div>
-        
+
+        {error && (
+          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md">
+            <h3 className="text-sm font-medium text-red-800">Error:</h3>
+            <p className="mt-1 text-sm text-red-700">{error}</p>
+          </div>
+        )}
+
         {result && (
-          <div className="mt-4">
-            <h3 className="font-bold mb-2">Result:</h3>
-            <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto">
-              {result}
+          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-md">
+            <h3 className="text-sm font-medium text-green-800">Result:</h3>
+            <pre className="mt-1 text-sm text-green-700 whitespace-pre-wrap">
+              {JSON.stringify(result, null, 2)}
             </pre>
           </div>
         )}
+
+        <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-md">
+          <h3 className="text-sm font-medium text-gray-800 mb-2">API Configuration:</h3>
+          <div className="text-xs text-gray-600 space-y-1">
+            <p><strong>Base URL:</strong> {typeof window !== 'undefined' && window.ENV?.NEXT_PUBLIC_API_BASE_URL}</p>
+            <p><strong>API Key:</strong> {typeof window !== 'undefined' && window.ENV?.NEXT_PUBLIC_API_KEY ? 'Configured' : 'Not configured'}</p>
+            <p><strong>Environment:</strong> {typeof window !== 'undefined' && window.ENV?.NODE_ENV}</p>
+          </div>
+        </div>
       </div>
     </div>
   );

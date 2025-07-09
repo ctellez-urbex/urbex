@@ -40,7 +40,13 @@ export const API_CONFIG = {
   // Endpoints específicos
   ENDPOINTS: {
     CONTACT: '/contact/',
-    HEALTH: '/health'
+    HEALTH: '/health',
+    LOGIN: '/auth/login/',
+    REGISTER: '/auth/register/',
+    VERIFY_EMAIL: '/auth/verify-email/',
+    FORGOT_PASSWORD: '/auth/forgot-password/',
+    RESET_PASSWORD: '/auth/reset-password/',
+    USER_PROFILE: '/auth/profile/'
   }
 } as const;
 
@@ -111,6 +117,215 @@ export async function sendContactForm(formData: {
  */
 export async function healthCheck() {
   return apiRequest(API_CONFIG.ENDPOINTS.HEALTH);
+}
+
+/**
+ * Tipos para autenticación
+ */
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+  data?: {
+    user: {
+      email: string;
+      first_name?: string;
+      last_name?: string;
+      phone_number?: string;
+      su?: string;
+      plan?: string;
+      name?: string;
+    };
+    token: string;
+  };
+}
+
+export interface RegisterData {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  plan: string;
+}
+
+export interface VerifyEmailData {
+  email: string;
+  code: string;
+}
+
+export interface ForgotPasswordData {
+  email: string;
+}
+
+export interface ResetPasswordData {
+  email: string;
+  code: string;
+  new_password: string;
+}
+
+/**
+ * Función para login de usuario
+ * 
+ * @param credentials - Credenciales del usuario
+ * @returns Promise con la respuesta de login
+ */
+export async function loginUser(credentials: LoginCredentials): Promise<LoginResponse> {
+  try {
+    const response = await apiRequest<LoginResponse>(API_CONFIG.ENDPOINTS.LOGIN, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: credentials.email.trim(),
+        password: credentials.password
+      })
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('Login API Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error durante el login'
+    };
+  }
+}
+
+/**
+ * Función para registro de usuario
+ * 
+ * @param userData - Datos del usuario
+ * @returns Promise con la respuesta de registro
+ */
+export async function registerUser(userData: RegisterData) {
+  try {
+    const response = await apiRequest(API_CONFIG.ENDPOINTS.REGISTER, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: userData.email.trim(),
+        password: userData.password,
+        first_name: userData.first_name.trim(),
+        last_name: userData.last_name.trim(),
+        phone_number: userData.phone_number.trim(),
+        plan: userData.plan
+      })
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('Register API Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error durante el registro'
+    };
+  }
+}
+
+/**
+ * Función para verificar email
+ * 
+ * @param verifyData - Datos de verificación
+ * @returns Promise con la respuesta de verificación
+ */
+export async function verifyEmail(verifyData: VerifyEmailData) {
+  try {
+    const response = await apiRequest(API_CONFIG.ENDPOINTS.VERIFY_EMAIL, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: verifyData.email.trim(),
+        code: verifyData.code.trim()
+      })
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('Verify Email API Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error durante la verificación'
+    };
+  }
+}
+
+/**
+ * Función para solicitar reset de contraseña
+ * 
+ * @param forgotData - Datos para reset de contraseña
+ * @returns Promise con la respuesta
+ */
+export async function forgotPassword(forgotData: ForgotPasswordData) {
+  try {
+    const response = await apiRequest(API_CONFIG.ENDPOINTS.FORGOT_PASSWORD, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: forgotData.email.trim()
+      })
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('Forgot Password API Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error durante la solicitud'
+    };
+  }
+}
+
+/**
+ * Función para reset de contraseña
+ * 
+ * @param resetData - Datos para reset de contraseña
+ * @returns Promise con la respuesta
+ */
+export async function resetPassword(resetData: ResetPasswordData) {
+  try {
+    const response = await apiRequest(API_CONFIG.ENDPOINTS.RESET_PASSWORD, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: resetData.email.trim(),
+        code: resetData.code.trim(),
+        new_password: resetData.new_password
+      })
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('Reset Password API Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error durante el reset de contraseña'
+    };
+  }
+}
+
+/**
+ * Función para obtener perfil del usuario
+ * 
+ * @param token - Token de autenticación
+ * @returns Promise con los datos del usuario
+ */
+export async function getUserProfile(token: string) {
+  try {
+    const response = await apiRequest(API_CONFIG.ENDPOINTS.USER_PROFILE, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('Get User Profile API Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error al obtener perfil'
+    };
+  }
 }
 
 // Log API configuration

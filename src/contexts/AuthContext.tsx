@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { authService } from '@/lib/aws/cognito'
+import { loginUser, getUserProfile, LoginResponse } from '@/config/api'
 
 // Types
 interface User {
@@ -14,6 +14,10 @@ interface User {
   su?: string
   plan?: string
   token: string
+}
+
+interface StoredUser extends Omit<User, 'token'> {
+  token: string;
 }
 
 interface AuthContextType {
@@ -56,74 +60,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkExistingSession = async () => {
     try {
       console.log('🔍 Checking existing session...');
-      const session = await authService.getCurrentSession()
-      console.log('🔍 Session result:', session);
       
-      if (session.success && session.token) {
-        // Get user info from Cognito using backend API
-        console.log('🔍 Getting user attributes from backend API...');
+      // Check if we have a stored token
+      const storedUser = getUserFromStorage();
+      if (storedUser && storedUser.token) {
+        console.log('🔍 Found stored user session');
         
-        // First get basic user info to get the email
-        const basicUserResult = await authService.getUserAttributes();
-        const email = basicUserResult.attributes?.email;
-        
-        if (!email) {
-          console.log('❌ No email available for getting attributes');
-          return;
+        // Try to get fresh user data from API
+        try {
+          const profileResult = await getUserProfile(storedUser.token);
+          if (profileResult.success && profileResult.data) {
+            console.log('🔍 Got fresh user data from API');
+            setUser({
+              ...profileResult.data.user,
+              token: storedUser.token
+            });
+          } else {
+            console.log('❌ Failed to get fresh user data, using stored data');
+            setUser(storedUser);
+          }
+        } catch (error) {
+          console.log('❌ Error getting fresh user data, using stored data');
+          setUser(storedUser);
         }
-        
-        const response = await fetch(`/api/user/attributes?email=${encodeURIComponent(email)}`);
-        const userResult = await response.json();
-        console.log('🔍 User attributes result:', userResult);
-        
-        if (userResult.success && userResult.attributes) {
-          console.log('🔍 Processing user attributes:', userResult.attributes);
-          const userInfo = {
-            email: userResult.attributes.email,
-            name: `${userResult.attributes.given_name} ${userResult.attributes.family_name}`.trim() || userResult.attributes.email.split('@')[0],
-            first_name: userResult.attributes.given_name.trim(),
-            last_name: userResult.attributes.family_name.trim(),
-            phone_number: userResult.attributes.phone_number,
-            su: userResult.attributes.su,
-            plan: userResult.attributes.plan
-          }
-          console.log('🔍 Final userInfo:', userInfo);
-          setUser({ ...userInfo, token: session.token })
-          saveUserToStorage(userInfo)
-        } else {
-          console.log('❌ Failed to get user attributes, using fallback');
-          
-          // If it's an authentication error, don't use fallback
-          if (userResult.error && (userResult.error.includes('Invalid or expired session') || userResult.error.includes('User is not authenticated'))) {
-            console.log('❌ Authentication error, clearing session');
-            setUser(null)
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('userInfo')
-            }
-            return
-          }
-          
-          // Fallback to localStorage if Cognito attributes fail for other reasons
-          const userInfo = getUserFromStorage()
-          if (userInfo) {
-            setUser({ ...userInfo, token: session.token })
-          }
-        }
+      } else {
+        console.log('❌ No stored session found');
+        setUser(null);
       }
     } catch (error) {
-      console.log('❌ No existing session found:', error)
-      
-      // Clear any invalid session data
-      setUser(null)
+      console.log('❌ Error checking session:', error);
+      setUser(null);
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('userInfo')
+        localStorage.removeItem('userInfo');
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  const getUserFromStorage = (): Omit<User, 'token'> | null => {
+  const getUserFromStorage = (): StoredUser | null => {
     if (typeof window !== 'undefined') {
       const userInfo = localStorage.getItem('userInfo')
       return userInfo ? JSON.parse(userInfo) : null
@@ -131,7 +106,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return null
   }
 
-  const saveUserToStorage = (userInfo: Omit<User, 'token'>) => {
+  const saveUserToStorage = (userInfo: User) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('userInfo', JSON.stringify(userInfo))
     }
@@ -141,14 +116,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('🔵 SignIn called with:', email)
     
     try {
-      const result = await authService.signIn({ email, password })
-      console.log('🔵 Auth service result:', result)
+      const result = await loginUser({ email, password })
+      console.log('🔵 Login API result:', result)
       
-      if (result.success && result.token) {
-        const userInfo = { email, name: email.split('@')[0] }
+      if (result.success && result.data) {
+        const userInfo = {
+          email: result.data.user.email,
+          name: result.data.user.name || result.data.user.email.split('@')[0],
+          first_name: result.data.user.first_name,
+          last_name: result.data.user.last_name,
+          phone_number: result.data.user.phone_number,
+          su: result.data.user.su,
+          plan: result.data.user.plan,
+          token: result.data.token
+        }
         console.log('🔵 Setting user:', userInfo)
         
-        setUser({ ...userInfo, token: result.token })
+        setUser(userInfo)
         saveUserToStorage(userInfo)
         
         // Small delay to ensure state is updated before navigation
@@ -170,15 +154,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, phone: string, plan: string) => {
     try {
-      const result = await authService.signUp({ email, password, firstName, lastName, phone, plan })
-      
-      if (result.success) {
-        // Redirect to email verification page
-        router.push(`/auth/verify-email/index.html?email=${encodeURIComponent(email)}`)
-        return { success: true }
-      }
-      
-      return { success: false, error: result.error }
+      // For now, redirect to registration page - API integration can be added later
+      router.push(`/auth/register?email=${encodeURIComponent(email)}`)
+      return { success: true }
     } catch (error) {
       return { success: false, error: 'Error durante el registro' }
     }
@@ -186,15 +164,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     try {
-      await authService.signOut()
-    } catch (error) {
-      console.error('Error during sign out:', error)
-    } finally {
+      // Clear user data
       setUser(null)
       if (typeof window !== 'undefined') {
         localStorage.removeItem('userInfo')
       }
       router.push('/')
+    } catch (error) {
+      console.error('Error during sign out:', error)
     }
   }
 
@@ -202,41 +179,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('🔄 Refreshing user data...');
       
-      // First get basic user info to get the email
-      const basicResult = await authService.getUserAttributes();
-      const email = basicResult.attributes?.email;
-      
-      if (!email) {
-        console.log('❌ No email available for refreshing attributes');
-        return;
-      }
-      
-      const response = await fetch(`/api/user/attributes?email=${encodeURIComponent(email)}`);
-      const result = await response.json();
-      console.log('🔄 Refresh result:', result);
-      
-      if (result.success && result.attributes) {
-        console.log('🔄 Processing refresh attributes:', result.attributes);
-        const userInfo = {
-          email: result.attributes.email,
-          name: `${result.attributes.given_name} ${result.attributes.family_name}`.trim() || result.attributes.email.split('@')[0],
-          first_name: result.attributes.given_name.trim(),
-          last_name: result.attributes.family_name.trim(),
-          phone_number: result.attributes.phone_number,
-          su: result.attributes.su,
-          plan: result.attributes.plan
-        }
-        console.log('🔄 Final refresh userInfo:', userInfo);
+      if (user && user.token) {
+        const profileResult = await getUserProfile(user.token);
+        console.log('🔄 Refresh result:', profileResult);
         
-        setUser(prevUser => prevUser ? { ...prevUser, ...userInfo } : null)
-        saveUserToStorage(userInfo)
-      } else {
-        console.log('❌ Failed to refresh user data:', result.error);
-        
-        // If session is invalid, sign out the user
-        if (result.error && (result.error.includes('Invalid or expired session') || result.error.includes('User is not authenticated'))) {
-          console.log('🔄 Session invalid, signing out user...');
-          await signOut();
+        if (profileResult.success && profileResult.data) {
+          console.log('🔄 Processing refresh data:', profileResult.data);
+          const userInfo = {
+            email: profileResult.data.user.email,
+            name: profileResult.data.user.name || profileResult.data.user.email.split('@')[0],
+            first_name: profileResult.data.user.first_name,
+            last_name: profileResult.data.user.last_name,
+            phone_number: profileResult.data.user.phone_number,
+            su: profileResult.data.user.su,
+            plan: profileResult.data.user.plan,
+            token: user.token
+          }
+          console.log('🔄 Final refresh userInfo:', userInfo);
+          
+          setUser(userInfo);
+          saveUserToStorage(userInfo);
+        } else {
+          console.log('❌ Failed to refresh user data:', profileResult.error);
+          
+          // If session is invalid, sign out the user
+          if (profileResult.error && (profileResult.error.includes('Invalid or expired session') || profileResult.error.includes('User is not authenticated'))) {
+            console.log('🔄 Session invalid, signing out user...');
+            await signOut();
+          }
         }
       }
     } catch (error) {

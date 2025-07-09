@@ -499,8 +499,14 @@ https://eo6cj32bch.execute-api.us-east-2.amazonaws.com/prod/api/v1
 ```
 
 #### Endpoints Disponibles
-- `POST /contact` - Formulario de contacto
+- `POST /contact/` - Formulario de contacto
 - `GET /health` - Health check
+- `POST /auth/login/` - Autenticación de usuario
+- `POST /auth/register/` - Registro de usuario
+- `POST /auth/verify-email/` - Verificación de email
+- `POST /auth/forgot-password/` - Solicitar reset de contraseña
+- `POST /auth/reset-password/` - Reset de contraseña
+- `GET /auth/profile/` - Obtener perfil de usuario
 
 #### Autenticación
 Todas las peticiones a la API requieren un API key que debe enviarse en el header `x-api-key`.
@@ -510,6 +516,40 @@ Si experimentas errores de CORS, verifica que:
 1. La URL de la API esté correctamente configurada en `.env.production`
 2. El API key sea válido
 3. El endpoint esté disponible en la API
+
+#### Uso de la API de Login
+
+La aplicación ahora utiliza una API externa para autenticación. Las funciones principales están disponibles en `src/config/api.ts`:
+
+```typescript
+import { loginUser, registerUser, getUserProfile } from '@/config/api'
+
+// Login de usuario
+const loginResult = await loginUser({
+  email: 'usuario@ejemplo.com',
+  password: 'contraseña123'
+})
+
+// Registro de usuario
+const registerResult = await registerUser({
+  email: 'usuario@ejemplo.com',
+  password: 'contraseña123',
+  first_name: 'Juan',
+  last_name: 'Pérez',
+  phone_number: '+1234567890',
+  plan: 'basic'
+})
+
+// Obtener perfil de usuario
+const profileResult = await getUserProfile(token)
+```
+
+#### Testing de la API
+
+Puedes probar los endpoints en la página `/test-api` que incluye:
+- Health check de la API
+- Prueba de login
+- Prueba de formulario de contacto
 
 ### Obtener Credenciales de Mailgun
 1. Regístrate en [Mailgun](https://www.mailgun.com/)
