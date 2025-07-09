@@ -30,8 +30,8 @@ export default function TestApiPage() {
     
     try {
       const response = await loginUser({
-        email: 'test@example.com',
-        password: 'testpassword123'
+        email: 'carloss.tellezz@gmail.com',
+        password: 'C4nc3rb3r0**'
       });
       setResult(response);
     } catch (err) {

@@ -521,10 +521,12 @@ Si experimentas errores de CORS, verifica que:
 
 La aplicación ahora utiliza una API externa para autenticación. Las funciones principales están disponibles en `src/config/api.ts`:
 
+**Nota:** La API externa espera el campo `username` en lugar de `email`, pero internamente seguimos usando `email` para mantener consistencia en el frontend.
+
 ```typescript
 import { loginUser, registerUser, getUserProfile } from '@/config/api'
 
-// Login de usuario
+// Login de usuario (la API espera 'username' pero usamos 'email' internamente)
 const loginResult = await loginUser({
   email: 'usuario@ejemplo.com',
   password: 'contraseña123'

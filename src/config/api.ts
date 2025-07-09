@@ -123,7 +123,7 @@ export async function healthCheck() {
  * Tipos para autenticación
  */
 export interface LoginCredentials {
-  email: string;
+  email: string; // Internamente usamos email, pero la API espera username
   password: string;
 }
 
@@ -180,7 +180,7 @@ export async function loginUser(credentials: LoginCredentials): Promise<LoginRes
     const response = await apiRequest<LoginResponse>(API_CONFIG.ENDPOINTS.LOGIN, {
       method: 'POST',
       body: JSON.stringify({
-        email: credentials.email.trim(),
+        username: credentials.email.trim(),
         password: credentials.password
       })
     });
