@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (profileResult.success && profileResult.data) {
             console.log('🔍 Got fresh user data from API');
             setUser({
-              ...profileResult.data.user,
+              ...profileResult.data,
               token: storedUser.token
             });
           } else {

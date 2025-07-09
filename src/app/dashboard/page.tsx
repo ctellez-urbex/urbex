@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Users, Building, Search, Settings, RefreshCw } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function DashboardPage() {
   return (
@@ -16,8 +16,26 @@ export default function DashboardPage() {
 }
 
 function DashboardContent() {
-  const { user, signOut, refreshUserData } = useAuth()
+  const { user, refreshUserData } = useAuth()
   const [refreshing, setRefreshing] = useState(false)
+
+  console.log('🔍 Dashboard - Current user state:', user)
+
+  // Load fresh user data when component mounts
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (user?.token) {
+        console.log('🔄 Loading fresh user data on dashboard mount...')
+        try {
+          await refreshUserData()
+        } catch (error) {
+          console.error('❌ Error loading user data on mount:', error)
+        }
+      }
+    }
+
+    loadUserData()
+  }, [user?.token, refreshUserData])
 
   const handleRefresh = async () => {
     setRefreshing(true)
