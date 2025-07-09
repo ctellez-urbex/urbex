@@ -314,7 +314,8 @@ export async function getUserProfile(token: string) {
     const response = await apiRequest(API_CONFIG.ENDPOINTS.USER_PROFILE, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'x-api-key': API_CONFIG.API_KEY
       }
     });
     
