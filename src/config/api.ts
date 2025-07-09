@@ -46,7 +46,7 @@ export const API_CONFIG = {
     VERIFY_EMAIL: '/auth/verify-email/',
     FORGOT_PASSWORD: '/auth/forgot-password/',
     RESET_PASSWORD: '/auth/reset-password/',
-    USER_PROFILE: '/auth/profile/'
+    USER_PROFILE: '/auth/me'
   }
 } as const;
 
