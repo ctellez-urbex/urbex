@@ -136,7 +136,7 @@ El frontend se comunica con una **API externa** para todas las operaciones de au
 #### Endpoints Integrados
 - **POST /auth/login**: Inicio de sesión de usuarios
 - **POST /auth/register**: Registro de nuevos usuarios
-- **POST /auth/verify-email**: Verificación de email
+- **POST /auth/confirm**: Verificación de email con código
 - **POST /auth/forgot-password**: Solicitud de reset de contraseña
 - **POST /auth/reset-password**: Confirmación de reset de contraseña
 - **GET /auth/me**: Obtener perfil del usuario autenticado
@@ -185,6 +185,55 @@ Response:
 {
   "success": true,
   "message": "Contraseña actualizada correctamente",
+  "data": null
+}
+```
+
+##### Register (Registro de usuario)
+```bash
+POST /prod/api/v1/auth/register
+Headers:
+  Content-Type: application/json
+  x-api-key: <api_key>
+
+Body:
+{
+  "email": "user@example.com",
+  "password": "Password123!",
+  "first_name": "John",
+  "last_name": "Doe",
+  "phone_number": "+573052464748",
+  "plan": "basic",
+  "su": "1"
+}
+
+Response:
+{
+  "success": true,
+  "message": "Usuario registrado correctamente",
+  "data": {
+    "email": "user@example.com"
+  }
+}
+```
+
+##### Confirm Email (Verificación de email)
+```bash
+POST /prod/api/v1/auth/confirm
+Headers:
+  Content-Type: application/json
+  x-api-key: <api_key>
+
+Body:
+{
+  "username": "user@example.com",
+  "confirmation_code": "123456"
+}
+
+Response:
+{
+  "success": true,
+  "message": "Email verificado correctamente",
   "data": null
 }
 ```

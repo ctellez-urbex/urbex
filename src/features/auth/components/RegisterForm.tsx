@@ -233,31 +233,10 @@ const RegisterForm = memo(() => {
     // Check if passwords match
     const passwordsMatch = formData.password === formData.confirmPassword;
     
-    // Validate email format
-    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
-    
-    // Validate phone format
-    const cleanPhone = formData.phone.replace(/\s/g, '');
-    let isValidPhone = false;
-    
-    if (cleanPhone.startsWith('+57')) {
-      const digits = cleanPhone.slice(3);
-      isValidPhone = digits.length === 10 && /^\d{10}$/.test(digits);
-    } else if (cleanPhone.startsWith('+52')) {
-      const digits = cleanPhone.slice(3);
-      isValidPhone = digits.length === 10 && /^\d{10}$/.test(digits);
-    } else {
-      isValidPhone = /^\+[1-9]\d{1,14}$/.test(cleanPhone);
-    }
-    
-    // Validate password requirements
-    const isValidPassword = formData.password.length >= 8 && 
-                           /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password);
-    
     // Check if there are no validation errors
     const hasNoErrors = Object.keys(errors).length === 0;
     
-    return hasAllFields && hasNoErrors && passwordsMatch && isValidEmail && isValidPhone && isValidPassword;
+    return hasAllFields && hasNoErrors && passwordsMatch;
   }, [formData, errors]);
 
   // Auto-clear confirmPassword error when passwords match
@@ -328,6 +307,24 @@ const RegisterForm = memo(() => {
       setErrors(prev => ({ ...prev, plan: undefined }));
     }
   }, [formData.plan, errors.plan]);
+
+  // Auto-clear all errors when form becomes valid
+  useEffect(() => {
+    const hasAllFields = formData.firstName.trim() && 
+                        formData.lastName.trim() && 
+                        formData.email.trim() && 
+                        formData.phone.trim() && 
+                        formData.plan && 
+                        formData.password && 
+                        formData.confirmPassword;
+    
+    const passwordsMatch = formData.password === formData.confirmPassword;
+    
+    if (hasAllFields && passwordsMatch && Object.keys(errors).length > 0) {
+      // Only clear errors if all fields are filled and passwords match
+      setErrors({});
+    }
+  }, [formData, errors]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
