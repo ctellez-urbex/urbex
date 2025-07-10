@@ -2,7 +2,7 @@
 
 import { useState, useCallback, memo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { authService } from '@/lib/aws/cognito';
+import { verifyEmail, resendVerificationCode } from '@/config/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -32,48 +32,23 @@ const VerifyEmailForm = memo(() => {
     setLoading(true);
 
     try {
-      // Use the new API route that properly confirms the user
-      const response = await fetch('/api/auth/confirm-signup/index.html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          code: formData.code.trim()
-        }),
+      console.log('🔵 Verifying email for:', email);
+      const result = await verifyEmail({
+        username: email,
+        confirmation_code: formData.code.trim()
       });
+      console.log('🔵 Verify email result:', result);
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        // Disable the user immediately after successful registration
-        try {
-          const disableResponse = await fetch('/api/admin/disable-user', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: email.trim()
-            })
-          });
-
-          if (!disableResponse.ok) {
-            console.warn('Failed to disable user after registration:', await disableResponse.text());
-          }
-        } catch (disableError) {
-          console.warn('Error disabling user after registration:', disableError);
-        }
-        setMessage('✅ Correo electrónico verificado correctamente. Espera la aprobación del administrador.');
+      if (result.success) {
+        setMessage('✅ Correo electrónico verificado correctamente. Ya puedes iniciar sesión.');
         setTimeout(() => {
-          router.push('/auth/login/index.html?verified=true');
+          router.push('/auth/login?verified=true');
         }, 3000);
       } else {
         setError(result.error || 'Error al verificar el correo electrónico');
       }
     } catch (err) {
-      console.error('Verification error:', err);
+      console.error('❌ Verification error:', err);
       setError(err instanceof Error ? err.message : 'Error al verificar el correo electrónico');
     } finally {
       setLoading(false);
@@ -86,14 +61,17 @@ const VerifyEmailForm = memo(() => {
     setResendLoading(true);
 
     try {
-      const result = await authService.resendConfirmationCode(email);
+      console.log('🔵 Resending verification code for:', email);
+      const result = await resendVerificationCode({ email });
+      console.log('🔵 Resend code result:', result);
+      
       if (result.success) {
         setMessage('📧 Código de verificación reenviado');
       } else {
         setError(result.error || 'Error al reenviar el código');
       }
     } catch (err) {
-      console.error('Resend error:', err);
+      console.error('❌ Resend error:', err);
       setError(err instanceof Error ? err.message : 'Error al reenviar el código');
     } finally {
       setResendLoading(false);

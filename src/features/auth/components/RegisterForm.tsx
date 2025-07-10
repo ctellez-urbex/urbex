@@ -2,7 +2,7 @@
 
 import { useState, useCallback, memo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authService } from '@/lib/aws/cognito';
+import { registerUser } from '@/config/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
@@ -165,7 +165,7 @@ const RegisterForm = memo(() => {
 
   const getErrorMessage = (err: Error): string => {
     const message = err.message.toLowerCase();
-    if (message.includes('user already exists')) {
+    if (message.includes('user already exists') || message.includes('already exists')) {
       return 'Ya existe una cuenta con este correo electrónico';
     }
     if (message.includes('invalid password')) {
@@ -173,6 +173,12 @@ const RegisterForm = memo(() => {
     }
     if (message.includes('invalid phone number')) {
       return 'El número de teléfono no es válido';
+    }
+    if (message.includes('email') && message.includes('required')) {
+      return 'El correo electrónico es requerido';
+    }
+    if (message.includes('password') && message.includes('required')) {
+      return 'La contraseña es requerida';
     }
     return 'Error al crear la cuenta. Por favor, intenta de nuevo';
   };
@@ -187,17 +193,20 @@ const RegisterForm = memo(() => {
     setLoading(true);
 
     try {
-      const result = await authService.signUp({
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
+      console.log('🔵 Registering user:', formData.email);
+      const result = await registerUser({
         email: formData.email.trim(),
         password: formData.password,
-        phone: formatPhoneForCognito(formData.phone), // Format correctly for AWS Cognito
-        plan: formData.plan
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
+        phone_number: formatPhoneForCognito(formData.phone),
+        plan: formData.plan,
+        su: '1' // Default value for new users
       });
+      console.log('🔵 Register result:', result);
 
       if (result.success) {
-        router.push(`/auth/verify-email/index.html?email=${encodeURIComponent(formData.email)}`);
+        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
       } else {
         setErrors({ email: result.error || 'Error al crear la cuenta' });
       }
@@ -221,13 +230,34 @@ const RegisterForm = memo(() => {
                         formData.password && 
                         formData.confirmPassword;
     
-    // Check if there are no validation errors
-    const hasNoErrors = Object.keys(errors).length === 0;
-    
     // Check if passwords match
     const passwordsMatch = formData.password === formData.confirmPassword;
     
-    return hasAllFields && hasNoErrors && passwordsMatch;
+    // Validate email format
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+    
+    // Validate phone format
+    const cleanPhone = formData.phone.replace(/\s/g, '');
+    let isValidPhone = false;
+    
+    if (cleanPhone.startsWith('+57')) {
+      const digits = cleanPhone.slice(3);
+      isValidPhone = digits.length === 10 && /^\d{10}$/.test(digits);
+    } else if (cleanPhone.startsWith('+52')) {
+      const digits = cleanPhone.slice(3);
+      isValidPhone = digits.length === 10 && /^\d{10}$/.test(digits);
+    } else {
+      isValidPhone = /^\+[1-9]\d{1,14}$/.test(cleanPhone);
+    }
+    
+    // Validate password requirements
+    const isValidPassword = formData.password.length >= 8 && 
+                           /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password);
+    
+    // Check if there are no validation errors
+    const hasNoErrors = Object.keys(errors).length === 0;
+    
+    return hasAllFields && hasNoErrors && passwordsMatch && isValidEmail && isValidPhone && isValidPassword;
   }, [formData, errors]);
 
   // Auto-clear confirmPassword error when passwords match
@@ -267,6 +297,37 @@ const RegisterForm = memo(() => {
       }
     }
   }, [formData.phone, errors.phone]);
+
+  // Auto-clear firstName error when corrected
+  useEffect(() => {
+    if (formData.firstName.trim() && formData.firstName.trim().length >= 2 && errors.firstName) {
+      setErrors(prev => ({ ...prev, firstName: undefined }));
+    }
+  }, [formData.firstName, errors.firstName]);
+
+  // Auto-clear lastName error when corrected
+  useEffect(() => {
+    if (formData.lastName.trim() && formData.lastName.trim().length >= 2 && errors.lastName) {
+      setErrors(prev => ({ ...prev, lastName: undefined }));
+    }
+  }, [formData.lastName, errors.lastName]);
+
+  // Auto-clear password error when requirements are met
+  useEffect(() => {
+    if (formData.password && 
+        formData.password.length >= 8 && 
+        /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password) && 
+        errors.password) {
+      setErrors(prev => ({ ...prev, password: undefined }));
+    }
+  }, [formData.password, errors.password]);
+
+  // Auto-clear plan error when selected
+  useEffect(() => {
+    if (formData.plan && errors.plan) {
+      setErrors(prev => ({ ...prev, plan: undefined }));
+    }
+  }, [formData.plan, errors.plan]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>

@@ -44,6 +44,7 @@ export const API_CONFIG = {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register/',
     VERIFY_EMAIL: '/auth/verify-email/',
+    CONFIRM_EMAIL: '/auth/confirm',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
     USER_PROFILE: '/auth/me'
@@ -152,11 +153,16 @@ export interface RegisterData {
   last_name: string;
   phone_number: string;
   plan: string;
+  su?: string;
 }
 
 export interface VerifyEmailData {
+  username: string;
+  confirmation_code: string;
+}
+
+export interface ResendCodeData {
   email: string;
-  code: string;
 }
 
 export interface ForgotPasswordData {
@@ -211,7 +217,8 @@ export async function registerUser(userData: RegisterData) {
         first_name: userData.first_name.trim(),
         last_name: userData.last_name.trim(),
         phone_number: userData.phone_number.trim(),
-        plan: userData.plan
+        plan: userData.plan,
+        su: userData.su || '1' // Default value for new users
       })
     });
     
@@ -233,11 +240,11 @@ export async function registerUser(userData: RegisterData) {
  */
 export async function verifyEmail(verifyData: VerifyEmailData) {
   try {
-    const response = await apiRequest(API_CONFIG.ENDPOINTS.VERIFY_EMAIL, {
+    const response = await apiRequest(API_CONFIG.ENDPOINTS.CONFIRM_EMAIL, {
       method: 'POST',
       body: JSON.stringify({
-        email: verifyData.email.trim(),
-        code: verifyData.code.trim()
+        username: verifyData.username.trim(),
+        confirmation_code: verifyData.confirmation_code.trim()
       })
     });
     
@@ -247,6 +254,31 @@ export async function verifyEmail(verifyData: VerifyEmailData) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error durante la verificación'
+    };
+  }
+}
+
+/**
+ * Función para reenviar código de verificación
+ * 
+ * @param resendData - Datos para reenviar código
+ * @returns Promise con la respuesta
+ */
+export async function resendVerificationCode(resendData: ResendCodeData) {
+  try {
+    const response = await apiRequest(API_CONFIG.ENDPOINTS.REGISTER, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: resendData.email.trim()
+      })
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('Resend Code API Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error al reenviar el código'
     };
   }
 }
