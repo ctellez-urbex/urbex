@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { forgotPassword, resetPassword } from '@/config/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ForgotPasswordFormData {
   email: string;
@@ -17,6 +18,7 @@ interface ForgotPasswordFormData {
 const ForgotPasswordForm = memo(() => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [formData, setFormData] = useState<ForgotPasswordFormData>({
     email: '',
@@ -135,6 +137,7 @@ const ForgotPasswordForm = memo(() => {
 
     try {
       console.log('🔵 Requesting password reset code for:', formData.email);
+      // For forgot password, we don't need a token as it's a public endpoint
       const result = await forgotPassword({ email: formData.email });
       console.log('🔵 Forgot password result:', result);
       
@@ -165,6 +168,7 @@ const ForgotPasswordForm = memo(() => {
 
     try {
       console.log('🔵 Resending password reset code for:', formData.email);
+      // For resend code, we don't need a token as it's a public endpoint
       const result = await forgotPassword({ email: formData.email });
       console.log('🔵 Resend code result:', result);
       
@@ -198,11 +202,12 @@ const ForgotPasswordForm = memo(() => {
 
     try {
       console.log('🔵 Resetting password for:', formData.email);
+      // For reset password, we need the user's token for authorization
       const result = await resetPassword({
-        email: formData.email,
-        code: formData.code.trim(),
+        username: formData.email,
+        confirmation_code: formData.code.trim(),
         new_password: formData.newPassword
-      });
+      }, user?.token);
       console.log('🔵 Reset password result:', result);
 
       if (result.success) {

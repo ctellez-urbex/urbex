@@ -164,8 +164,8 @@ export interface ForgotPasswordData {
 }
 
 export interface ResetPasswordData {
-  email: string;
-  code: string;
+  username: string;
+  confirmation_code: string;
   new_password: string;
 }
 
@@ -255,12 +255,23 @@ export async function verifyEmail(verifyData: VerifyEmailData) {
  * Función para solicitar reset de contraseña
  * 
  * @param forgotData - Datos para reset de contraseña
+ * @param token - Token de autenticación (opcional)
  * @returns Promise con la respuesta
  */
-export async function forgotPassword(forgotData: ForgotPasswordData) {
+export async function forgotPassword(forgotData: ForgotPasswordData, token?: string) {
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await apiRequest(API_CONFIG.ENDPOINTS.FORGOT_PASSWORD, {
       method: 'POST',
+      headers,
       body: JSON.stringify({
         email: forgotData.email.trim()
       })
@@ -280,15 +291,26 @@ export async function forgotPassword(forgotData: ForgotPasswordData) {
  * Función para reset de contraseña
  * 
  * @param resetData - Datos para reset de contraseña
+ * @param token - Token de autenticación (opcional)
  * @returns Promise con la respuesta
  */
-export async function resetPassword(resetData: ResetPasswordData) {
+export async function resetPassword(resetData: ResetPasswordData, token?: string) {
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await apiRequest(API_CONFIG.ENDPOINTS.RESET_PASSWORD, {
       method: 'POST',
+      headers,
       body: JSON.stringify({
-        email: resetData.email.trim(),
-        code: resetData.code.trim(),
+        username: resetData.username.trim(),
+        confirmation_code: resetData.confirmation_code.trim(),
         new_password: resetData.new_password
       })
     });

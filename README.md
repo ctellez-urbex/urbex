@@ -14,7 +14,7 @@ Urbex es una plataforma moderna de análisis inmobiliario que utiliza inteligenc
 - **Equipo**: Presentación de nuestro equipo de expertos
 - **Formulario de Contacto**: Comunicación directa con los usuarios
 - **Autenticación**: Sistema de login/registro con AWS Cognito
-- **Recuperación de Contraseña**: Sistema completo con Mailgun
+- **Recuperación de Contraseña**: Sistema completo integrado con API externa
 - **Dashboard**: Panel de control personalizado
 - **Administración de Usuarios**: Gestión completa de usuarios registrados
 
@@ -126,7 +126,7 @@ El dashboard integra datos completos del usuario desde la API externa:
 - **Protección de Rutas**: Acceso controlado a páginas privadas
 - **Persistencia de Sesión**: Mantiene el estado de login
 - **Redirección Automática**: Navegación inteligente según estado
-- **Recuperación de Contraseña**: Sistema completo con Mailgun
+- **Recuperación de Contraseña**: Sistema completo integrado con API externa
 
 ## 🌐 APIs Externas
 
@@ -140,6 +140,54 @@ El frontend se comunica con una **API externa** para todas las operaciones de au
 - **POST /auth/forgot-password**: Solicitud de reset de contraseña
 - **POST /auth/reset-password**: Confirmación de reset de contraseña
 - **GET /auth/me**: Obtener perfil del usuario autenticado
+
+#### Estructura de APIs de Recuperación de Contraseña
+
+##### Forgot Password (Solicitar código)
+```bash
+POST /prod/api/v1/auth/forgot-password
+Headers:
+  Content-Type: application/json
+  x-api-key: <api_key>
+  Authorization: Bearer <token> (opcional)
+
+Body:
+{
+  "email": "user@example.com"
+}
+
+Response:
+{
+  "success": true,
+  "message": "Código de restablecimiento de contraseña enviado...",
+  "data": {
+    "email": "user@example.com"
+  }
+}
+```
+
+##### Reset Password (Confirmar código)
+```bash
+POST /prod/api/v1/auth/reset-password
+Headers:
+  Content-Type: application/json
+  x-api-key: <api_key>
+  Authorization: Bearer <token> (requerido)
+
+Body:
+{
+  "username": "user@example.com",
+  "confirmation_code": "123456",
+  "new_password": "NewPassword123!"
+}
+
+Response:
+{
+  "success": true,
+  "message": "Contraseña actualizada correctamente",
+  "data": null
+}
+```
 
 #### Autenticación
 - **API Key**: Todas las peticiones incluyen el header `x-api-key`
