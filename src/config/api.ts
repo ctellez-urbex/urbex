@@ -44,8 +44,8 @@ export const API_CONFIG = {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register/',
     VERIFY_EMAIL: '/auth/verify-email/',
-    FORGOT_PASSWORD: '/auth/forgot-password/',
-    RESET_PASSWORD: '/auth/reset-password/',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    RESET_PASSWORD: '/auth/reset-password',
     USER_PROFILE: '/auth/me'
   }
 } as const;

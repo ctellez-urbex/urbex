@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { forgotPassword, resetPassword } from '@/config/api';
 
 interface ForgotPasswordFormData {
   email: string;
@@ -133,15 +134,9 @@ const ForgotPasswordForm = memo(() => {
     setErrors({});
 
     try {
-      const response = await fetch('/api/auth/forgot-password/index.html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: formData.email }),
-      });
-
-      const result = await response.json();
+      console.log('🔵 Requesting password reset code for:', formData.email);
+      const result = await forgotPassword({ email: formData.email });
+      console.log('🔵 Forgot password result:', result);
       
       if (result.success) {
         setStep('code');
@@ -152,7 +147,7 @@ const ForgotPasswordForm = memo(() => {
         setErrors({ email: result.error || 'Error al solicitar el código' });
       }
     } catch (err) {
-      console.error('Forgot password error:', err);
+      console.error('❌ Forgot password error:', err);
       setErrors({ 
         email: 'Error de conexión. Por favor, verifica tu conexión a internet e intenta de nuevo.' 
       });
@@ -169,23 +164,18 @@ const ForgotPasswordForm = memo(() => {
     setErrors({});
 
     try {
-      const response = await fetch('/api/auth/forgot-password/index.html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: formData.email }),
-      });
-
-      const result = await response.json();
+      console.log('🔵 Resending password reset code for:', formData.email);
+      const result = await forgotPassword({ email: formData.email });
+      console.log('🔵 Resend code result:', result);
       
       if (result.success) {
         setMessage('Código reenviado correctamente');
         setResendCooldown(60);
       } else {
-        setErrors({ code: 'Error al reenviar el código' });
+        setErrors({ code: result.error || 'Error al reenviar el código' });
       }
     } catch (err) {
+      console.error('❌ Resend code error:', err);
       setErrors({ 
         code: err instanceof Error ? getErrorMessage(err) : 'Error al reenviar el código' 
       });
@@ -207,30 +197,24 @@ const ForgotPasswordForm = memo(() => {
     setErrors({});
 
     try {
-      const response = await fetch('/api/auth/reset-password/index.html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          code: formData.code.trim(),
-          newPassword: formData.newPassword
-        }),
+      console.log('🔵 Resetting password for:', formData.email);
+      const result = await resetPassword({
+        email: formData.email,
+        code: formData.code.trim(),
+        new_password: formData.newPassword
       });
-
-      const result = await response.json();
+      console.log('🔵 Reset password result:', result);
 
       if (result.success) {
         setMessage('¡Contraseña actualizada correctamente! Redirigiendo...');
         setTimeout(() => {
-          router.push('/auth/login/index.html?message=password-reset-success');
+          router.push('/auth/login?message=password-reset-success');
         }, 2000);
       } else {
         setErrors({ code: result.error || 'Error al restablecer la contraseña' });
       }
     } catch (err) {
-      console.error('Reset password error:', err);
+      console.error('❌ Reset password error:', err);
       setErrors({ 
         code: err instanceof Error ? getErrorMessage(err) : 'Error al restablecer la contraseña' 
       });
