@@ -42,7 +42,7 @@ const VerifyEmailForm = memo(() => {
       if (result.success) {
         setMessage('✅ Correo electrónico verificado correctamente. Ya puedes iniciar sesión.');
         setTimeout(() => {
-          router.push('/auth/login?verified=true');
+          router.push('/auth/login/index.html?verified=true');
         }, 3000);
       } else {
         setError(result.error || 'Error al verificar el correo electrónico');
@@ -171,7 +171,7 @@ const VerifyEmailForm = memo(() => {
       </div>
     </div>
   );
-});
+}); 
 
 VerifyEmailForm.displayName = 'VerifyEmailForm';
 

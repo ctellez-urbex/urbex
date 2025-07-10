@@ -206,7 +206,7 @@ const RegisterForm = memo(() => {
       console.log('🔵 Register result:', result);
 
       if (result.success) {
-        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
+        router.push(`/auth/verify-email/index.html?email=${encodeURIComponent(formData.email)}`);
       } else {
         setErrors({ email: result.error || 'Error al crear la cuenta' });
       }
