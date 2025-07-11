@@ -12,11 +12,19 @@ interface UserFiltersProps {
 }
 
 export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
-  const [localFilters, setLocalFilters] = useState<AdminUserFilters>(filters)
+  const [localFilters, setLocalFilters] = useState<AdminUserFilters>({
+    search: filters.search || '',
+    status: filters.status || 'all',
+    plan: filters.plan || 'all'
+  })
   const [showAdvanced, setShowAdvanced] = useState(false)
 
   useEffect(() => {
-    setLocalFilters(filters)
+    setLocalFilters({
+      search: filters.search || '',
+      status: filters.status || 'all',
+      plan: filters.plan || 'all'
+    })
   }, [filters])
 
   const handleFilterChange = (key: keyof AdminUserFilters, value: string) => {
@@ -50,7 +58,7 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
           <Input
             type="text"
             placeholder="Buscar por nombre, email o teléfono..."
-            value={localFilters.search}
+            value={localFilters.search || ''}
             onChange={(e) => handleFilterChange('search', e.target.value)}
             className="pl-10"
           />
@@ -88,9 +96,9 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">Todos los estados</option>
-              <option value="active">Activo</option>
-              <option value="inactive">Inactivo</option>
-              <option value="pending">Pendiente</option>
+              <option value="CONFIRMED">Activo</option>
+              <option value="DISABLED">Inactivo</option>
+              <option value="PENDING">Pendiente</option>
             </select>
           </div>
 
@@ -104,9 +112,9 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">Todos los planes</option>
-              <option value="monthly">Mensual</option>
-              <option value="yearly">Anual</option>
-              <option value="free">Gratis</option>
+              <option value="Mensual">Mensual</option>
+              <option value="Anual">Anual</option>
+              <option value="Semanal">Semanal</option>
             </select>
           </div>
 

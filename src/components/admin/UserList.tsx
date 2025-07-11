@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Edit, Eye, MoreHorizontal, CheckCircle, XCircle, User } from 'lucide-react'
+import { Edit, Eye, CheckCircle, XCircle, User } from 'lucide-react'
 import { UserEditModal } from './UserEditModal'
 import { UserViewModal } from './UserViewModal'
 import { AdminUser, AdminPagination } from '@/config/api'
-import { formatDateOnly, formatDateTime } from '@/lib/utils'
+import { formatDateOnly } from '@/lib/utils'
 
 interface UserListProps {
   users: AdminUser[]

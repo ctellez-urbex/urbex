@@ -48,7 +48,8 @@ export const API_CONFIG = {
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
     USER_PROFILE: '/auth/me',
-    ADMIN_USERS: '/admin/users'
+    ADMIN_USERS: '/admin/users',
+    ADMIN_USER: '/admin/user/email'
   }
 } as const;
 
@@ -74,11 +75,23 @@ export async function apiRequest<T = any>(
     ...options
   };
   
+  // Asegurar que el API key esté presente
+  const headers = config.headers as Record<string, string>;
+  if (!headers?.['x-api-key']) {
+    config.headers = {
+      ...config.headers,
+      'x-api-key': API_CONFIG.API_KEY
+    };
+  }
+  
   console.log('🌐 API Request:', {
     url,
     method: config.method || 'POST',
     headers: config.headers,
-    body: config.body ? JSON.parse(config.body as string) : undefined
+    body: config.body ? JSON.parse(config.body as string) : undefined,
+    apiKeyConfigured: !!API_CONFIG.API_KEY,
+    apiKeyLength: API_CONFIG.API_KEY?.length || 0,
+    baseUrl: API_CONFIG.BASE_URL
   });
   
   try {
@@ -110,7 +123,10 @@ export async function apiRequest<T = any>(
     console.error('❌ API Request Error:', {
       url,
       error: error instanceof Error ? error.message : error,
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
+      fullError: error,
+      errorType: typeof error,
+      errorConstructor: error?.constructor?.name
     });
     throw error;
   }
@@ -451,6 +467,12 @@ export interface AdminUsersResponse {
   error?: string;
 }
 
+export interface AdminUserResponse {
+  success: boolean;
+  data?: AdminUser;
+  error?: string;
+}
+
 /**
  * Función para obtener la lista de usuarios desde la API externa
  * 
@@ -547,6 +569,105 @@ export async function getAdminUsers(
     return {
       success: false,
       error: `Error al obtener la lista de usuarios: ${errorMessage}`
+    };
+  }
+}
+
+/**
+ * Función para obtener datos de un usuario específico desde la API externa
+ * 
+ * @param userId - ID del usuario a obtener
+ * @param token - Token de autenticación del administrador
+ * @returns Promise con los datos del usuario
+ */
+export async function getAdminUser(
+  email: string, 
+  token?: string
+): Promise<AdminUserResponse> {
+  try {
+    console.log('🔍 Getting admin user:', {
+      email,
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      apiKeyConfigured: !!API_CONFIG.API_KEY,
+      apiKeyLength: API_CONFIG.API_KEY?.length || 0,
+      baseUrl: API_CONFIG.BASE_URL,
+      endpoint: `${API_CONFIG.ENDPOINTS.ADMIN_USER}/email/${encodeURIComponent(email)}`,
+      fullUrl: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN_USER}/email/${encodeURIComponent(email)}`
+    });
+    
+    // Verificar que tenemos el API key
+    if (!API_CONFIG.API_KEY) {
+      throw new Error('API key no configurada');
+    }
+    
+    // Verificar que tenemos el token
+    if (!token) {
+      throw new Error('Token de autenticación requerido');
+    }
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+      'Authorization': `Bearer ${token}`
+    };
+    
+    console.log('🔑 Headers:', {
+      'Content-Type': headers['Content-Type'],
+      'x-api-key': headers['x-api-key'] ? '***' : 'MISSING',
+      'Authorization': headers['Authorization'] ? 'Bearer ***' : 'MISSING'
+    });
+    
+    // Test de conectividad básico
+    console.log('🔍 Testing connectivity to:', API_CONFIG.BASE_URL);
+    
+    const response = await apiRequest<any>(`${API_CONFIG.ENDPOINTS.ADMIN_USER}/${encodeURIComponent(email)}`, {
+      method: 'GET',
+      headers
+    });
+    
+    console.log('✅ Admin user response:', response);
+    
+    return {
+      success: response.success,
+      data: response.data || response
+    };
+  } catch (error) {
+    console.error('❌ Get Admin User API Error:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      email,
+      hasToken: !!token,
+      fullError: error
+    });
+    
+    // Manejar errores específicos del servidor
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    
+    if (errorMessage.includes('404')) {
+      return {
+        success: false,
+        error: 'Usuario no encontrado'
+      };
+    }
+    
+    if (errorMessage.includes('401') || errorMessage.includes('403')) {
+      return {
+        success: false,
+        error: 'No tienes permisos para acceder a este usuario. Verifica tu token de autenticación.'
+      };
+    }
+    
+    if (errorMessage.includes('500')) {
+      return {
+        success: false,
+        error: 'El servidor no está disponible en este momento. Por favor, intenta más tarde.'
+      };
+    }
+    
+    return {
+      success: false,
+      error: `Error al obtener datos del usuario: ${errorMessage}`
     };
   }
 }

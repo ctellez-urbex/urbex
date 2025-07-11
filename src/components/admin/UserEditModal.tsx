@@ -35,6 +35,7 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
     status: user.status,
     plan: initialPlan
   })
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -85,29 +86,29 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
         }
       }
 
-      // Note: Plan updates require the custom:plan attribute to be created in Cognito first
-      // For now, we'll skip plan updates until the attribute is created
-      if (formData.plan !== user.plan) {
-        console.log('Plan change detected, updating via API...')
-        try {
-          const planResponse = await fetch(`/api/admin/users/${user.id}/plan`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ plan: formData.plan }),
-          })
+      // // Note: Plan updates require the custom:plan attribute to be created in Cognito first
+      // // For now, we'll skip plan updates until the attribute is created
+      // if (formData.plan !== user.plan) {
+      //   console.log('Plan change detected, updating via API...')
+      //   try {
+      //     const planResponse = await fetch(`/api/admin/users/${user.id}/plan`, {
+      //       method: 'PUT',
+      //       headers: { 'Content-Type': 'application/json' },
+      //       body: JSON.stringify({ plan: formData.plan }),
+      //     })
 
-          if (!planResponse.ok) {
-            const errorData = await planResponse.json()
-            console.warn('Plan update failed:', errorData.error)
-            // Don't throw error, just log warning since plan might not be configured yet
-          } else {
-            console.log('Plan updated successfully')
-          }
-        } catch (planError) {
-          console.warn('Plan update error (attribute might not be configured):', planError)
-          // Don't throw error, just log warning
-        }
-      }
+      //     if (!planResponse.ok) {
+      //       const errorData = await planResponse.json()
+      //       console.warn('Plan update failed:', errorData.error)
+      //       // Don't throw error, just log warning since plan might not be configured yet
+      //     } else {
+      //       console.log('Plan updated successfully')
+      //     }
+      //   } catch (planError) {
+      //     console.warn('Plan update error (attribute might not be configured):', planError)
+      //     // Don't throw error, just log warning
+      //   }
+      // }
 
       onUpdate()
     } catch (error) {

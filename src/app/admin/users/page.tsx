@@ -46,7 +46,14 @@ function UsersAdminContent() {
     setLoading(true)
     setError(null)
     try {
-      const result = await getAdminUsers(filters, user?.token)
+      // Convert UI filters to API filters
+      const apiFilters = {
+        search: filters.search?.trim() || undefined,
+        status: filters.status === 'all' ? undefined : filters.status,
+        plan: filters.plan === 'all' ? undefined : filters.plan
+      }
+      
+      const result = await getAdminUsers(apiFilters, user?.token)
       
       if (result.success && result.data) {
         const users = result.data.users || result.data
@@ -73,11 +80,11 @@ function UsersAdminContent() {
   }, [filters])
 
   const handleFilterChange = (newFilters: AdminUserFilters) => {
-    // Normalizar filtros: convertir cadenas vacías a undefined para traer todos los usuarios
+    // Normalizar filtros: mantener strings para la UI, pero enviar undefined para la API
     const normalizedFilters = {
-      search: newFilters.search?.trim() || undefined,
-      status: newFilters.status === 'all' ? undefined : newFilters.status,
-      plan: newFilters.plan === 'all' ? undefined : newFilters.plan
+      search: newFilters.search?.trim() || '',
+      status: newFilters.status === 'all' ? 'all' : newFilters.status || 'all',
+      plan: newFilters.plan === 'all' ? 'all' : newFilters.plan || 'all'
     }
     
     setFilters(normalizedFilters)

@@ -114,8 +114,33 @@ El dashboard integra datos completos del usuario desde la API externa:
 ### Administración de Usuarios
 - **UserList**: Tabla de usuarios con paginación y filtros
 - **UserFilters**: Filtros avanzados de búsqueda
-- **UserStats**: Estadísticas en tiempo real
+- **UserStats**: Estadísticas en tiempo real con cálculo robusto de planes
 - **UserEditModal**: Modal para editar información de usuarios
+- **UserViewModal**: Modal para ver detalles completos de usuarios con datos de API externa
+
+#### UserViewModal - Detalles de Usuario
+El modal de vista de usuario integra datos en tiempo real desde la API externa:
+
+##### Características
+- **Datos en Tiempo Real**: Obtiene información actualizada del usuario desde la API externa
+- **Botón de Actualización**: Permite refrescar los datos manualmente
+- **Información Completa**: Muestra todos los campos del usuario incluyendo ID, estado, plan, fechas, etc.
+- **Formateo de Fechas**: Utiliza las utilidades de formateo para mostrar fechas de manera legible
+- **Estados Visuales**: Badges coloridos para estado y plan del usuario
+- **Información Adicional**: Muestra campos especiales como Super Usuario (SU)
+
+##### Campos Mostrados
+- **Información Personal**: Nombre, apellido, email, teléfono
+- **Información de Cuenta**: Fecha de registro, último acceso
+- **Estado de Cuenta**: Estado (Activo/Inactivo/Pendiente), Plan (Mensual/Anual/Semanal)
+- **Información Técnica**: ID de usuario, Super Usuario (si aplica)
+
+##### Integración Técnica
+- **API Endpoint**: `GET /admin/user/email/{email}` para obtener datos específicos
+- **Autenticación**: Incluye token Bearer y API key en las peticiones
+- **Manejo de Errores**: Gestión robusta de errores con mensajes informativos
+- **Loading States**: Estados de carga durante las peticiones
+- **Formateo**: Utiliza `formatDateOnly()` y `formatDateTime()` para fechas
 
 ## 🔐 Sistema de Autenticación
 
@@ -140,6 +165,8 @@ El frontend se comunica con una **API externa** para todas las operaciones de au
 - **POST /auth/forgot-password**: Solicitud de reset de contraseña
 - **POST /auth/reset-password**: Confirmación de reset de contraseña
 - **GET /auth/me**: Obtener perfil del usuario autenticado
+- **POST /admin/users**: Obtener lista de usuarios administradores
+- **GET /admin/user/email/{email}**: Obtener datos específicos de un usuario
 
 #### Estructura de APIs de Recuperación de Contraseña
 

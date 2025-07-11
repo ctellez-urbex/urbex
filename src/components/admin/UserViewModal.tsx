@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, User, Mail, Phone, Calendar, CreditCard, Clock, CheckCircle, XCircle, MoreHorizontal, RefreshCw } from 'lucide-react'
-import { AdminUser } from '@/config/api'
+import { AdminUser, getAdminUser } from '@/config/api'
+import { useAuth } from '@/contexts/AuthContext'
+import { formatDateOnly, formatDateTime } from '@/lib/utils'
 
 interface UserViewModalProps {
   user: AdminUser
@@ -11,6 +13,7 @@ interface UserViewModalProps {
 }
 
 export function UserViewModal({ user, onClose }: UserViewModalProps) {
+  const { user: authUser } = useAuth()
   const [currentUser, setCurrentUser] = useState<AdminUser>(user)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -21,45 +24,42 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
     return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
   }
 
-  // Fetch latest user data
+  // Fetch latest user data from external API
   const fetchUserData = async () => {
     setLoading(true)
     setError('')
     
     try {
-      // Use the specific user API endpoint
-      const response = await fetch(`/api/admin/users/${encodeURIComponent(user.email)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('Usuario no encontrado')
-        }
-        throw new Error('Failed to fetch user data')
+      console.log('🔄 Fetching user data for:', user.email)
+      
+      // Verificar que tenemos el token de autenticación
+      if (!authUser?.token) {
+        throw new Error('No hay token de autenticación disponible. Por favor, inicia sesión nuevamente.')
       }
-
-      const data = await response.json()
-      if (data.success && data.user) {
-        setCurrentUser(data.user)
+         
+      const result = await getAdminUser(user.email, authUser.token)
+      
+      if (result.success && result.data) {
+        console.log('✅ User data fetched successfully:', result.data)
+        setCurrentUser(result.data)
       } else {
-        setError('Usuario no encontrado')
+        console.error('❌ Failed to fetch user data:', result.error)
+        setError(result.error || 'Error al cargar datos del usuario')
       }
     } catch (error) {
-      console.error('Error fetching user data:', error)
+      console.error('❌ Error fetching user data:', error)
       setError(error instanceof Error ? error.message : 'Error al cargar datos del usuario')
     } finally {
       setLoading(false)
     }
   }
 
-  // Fetch data on mount
+  // Fetch data on mount and when user changes
   useEffect(() => {
-    fetchUserData()
-  }, [user.id])
+    if (user.email) {
+      fetchUserData()
+    }
+  }, [user.email])
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -68,7 +68,7 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
       pending: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', icon: MoreHorizontal, text: 'Pendiente' }
     }
     
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active
     const Icon = config.icon
     
     return (
@@ -161,7 +161,7 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
                   <p className="text-gray-600 dark:text-gray-400">{currentUser.email}</p>
                   <div className="flex gap-2 mt-2">
                     {getStatusBadge(currentUser.status)}
-                    {getPlanBadge(currentUser.plan || '')}
+                    {getPlanBadge(currentUser.plan || 'Mensual')}
                   </div>
                 </div>
               </div>
@@ -207,11 +207,7 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Fecha de Registro</p>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {new Date(currentUser.createdAt).toLocaleDateString('es-ES', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
+                          {formatDateOnly(currentUser.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -222,13 +218,7 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Último Acceso</p>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {currentUser.lastLogin 
-                            ? new Date(currentUser.lastLogin).toLocaleDateString('es-ES', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })
+                            ? formatDateTime(currentUser.lastLogin)
                             : 'Nunca ha accedido'
                           }
                         </p>
