@@ -1,24 +1,24 @@
 'use client'
 
 import { Users, UserCheck, UserX, Clock, TrendingUp } from 'lucide-react'
-import { User } from '@/lib/cognito-admin'
+import { AdminUser } from '@/config/api'
 
 interface UserStatsProps {
-  users: User[]
+  users: AdminUser[]
 }
 
 export function UserStats({ users }: UserStatsProps) {
   const totalUsers = users.length
-  const activeUsers = users.filter(user => user.status === 'active').length
-  const inactiveUsers = users.filter(user => user.status === 'disabled').length
-  const pendingUsers = users.filter(user => user.status === 'pending').length
+  const activeUsers = users.filter(user => user.status === 'CONFIRMED').length
+  const inactiveUsers = users.filter(user => user.status === 'DISABLED').length
+  const pendingUsers = users.filter(user => user.status === 'PENDING').length
   const monthlyPlanUsers = users.filter(user => user.plan === 'Mensual').length
   
   // Calculate users who logged in within the last 30 days
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
   const recentActiveUsers = users.filter(user => 
-    user.lastLogin && new Date(user.lastLogin) > thirtyDaysAgo
+    user.last_login && new Date(user.last_login) > thirtyDaysAgo
   ).length
 
   const stats = [

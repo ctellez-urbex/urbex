@@ -47,7 +47,8 @@ export const API_CONFIG = {
     CONFIRM_EMAIL: '/auth/confirm',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
-    USER_PROFILE: '/auth/me'
+    USER_PROFILE: '/auth/me',
+    ADMIN_USERS: '/admin/users'
   }
 } as const;
 
@@ -73,17 +74,44 @@ export async function apiRequest<T = any>(
     ...options
   };
   
+  console.log('🌐 API Request:', {
+    url,
+    method: config.method || 'POST',
+    headers: config.headers,
+    body: config.body ? JSON.parse(config.body as string) : undefined
+  });
+  
   try {
     const response = await fetch(url, config);
-    const data = await response.json();
     
-    if (!response.ok) {
-      throw new Error(data.message || data.error || 'Error en la petición');
+    console.log('📡 API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+    
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      console.error('❌ JSON Parse Error:', jsonError);
+      throw new Error('Respuesta no válida del servidor');
     }
     
+    if (!response.ok) {
+      console.error('❌ API Error Response:', data);
+      throw new Error(data.message || data.error || `Error ${response.status}: ${response.statusText}`);
+    }
+    
+    console.log('✅ API Success Response:', data);
     return data;
   } catch (error) {
-    console.error('API Request Error:', error);
+    console.error('❌ API Request Error:', {
+      url,
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 }
@@ -379,6 +407,146 @@ export async function getUserProfile(token: string) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error al obtener perfil'
+    };
+  }
+}
+
+/**
+ * Tipos para administración de usuarios
+ */
+export interface AdminUser {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone_number?: string;
+  status: 'CONFIRMED' | 'DISABLED' | 'PENDING';
+  status_text: string;
+  plan?: string;
+  createdAt: string;
+  lastLogin?: string;
+  su?: string;
+}
+
+export interface AdminUserFilters {
+  search?: string;
+  status?: string;
+  plan?: string;
+}
+
+export interface AdminPagination {
+  page: number;
+  limit: number;
+  total?: number;
+}
+
+export interface AdminUsersResponse {
+  success: boolean;
+  data?: {
+    users: AdminUser[];
+    total: number;
+    page: number;
+    limit: number;
+  };
+  error?: string;
+}
+
+/**
+ * Función para obtener la lista de usuarios desde la API externa
+ * 
+ * @param filters - Filtros de búsqueda (null, '' o 'all' traen todos los usuarios)
+ * @param token - Token de autenticación del administrador
+ * @returns Promise con la lista completa de usuarios
+ */
+export async function getAdminUsers(
+  filters: AdminUserFilters = {}, 
+  token?: string
+): Promise<AdminUsersResponse> {
+  try {
+    console.log('🔍 Getting admin users with filters:', filters);
+    
+    // Preparar el body con los filtros
+    const requestBody: any = {};
+    
+    // Solo agregar filter si tiene valor y no es vacío
+    if (filters.search && filters.search.trim() !== '') {
+      requestBody.filter = filters.search.trim();
+    }
+    
+    // Solo agregar status si tiene valor y no es 'all'
+    if (filters.status && filters.status !== 'all' && filters.status.trim() !== '') {
+      requestBody.status = filters.status.trim();
+    }
+    
+    // Solo agregar plan si tiene valor y no es 'all'
+    if (filters.plan && filters.plan !== 'all' && filters.plan.trim() !== '') {
+      requestBody.plan = filters.plan.trim();
+    }
+    
+    console.log('📦 Request body:', requestBody);
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    console.log('🔑 Headers:', {
+      'Content-Type': headers['Content-Type'],
+      'x-api-key': headers['x-api-key'] ? '***' : 'MISSING',
+      'Authorization': headers['Authorization'] ? 'Bearer ***' : 'MISSING'
+    });
+    
+    const response = await apiRequest<any>(API_CONFIG.ENDPOINTS.ADMIN_USERS, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody)
+    });
+    
+    console.log('✅ Admin users response:', response);
+    
+    return {
+      success: true,
+      data: response.data || response
+    };
+  } catch (error) {
+    console.error('❌ Get Admin Users API Error:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      filters,
+      hasToken: !!token
+    });
+    
+    // Manejar errores específicos del servidor
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    
+    if (errorMessage.includes('500')) {
+      return {
+        success: false,
+        error: 'El endpoint de administración de usuarios no está disponible en este momento. Por favor, contacta al administrador del sistema.'
+      };
+    }
+    
+    if (errorMessage.includes('401') || errorMessage.includes('403')) {
+      return {
+        success: false,
+        error: 'No tienes permisos para acceder a la administración de usuarios. Verifica tu token de autenticación.'
+      };
+    }
+    
+    if (errorMessage.includes('404')) {
+      return {
+        success: false,
+        error: 'El endpoint de administración de usuarios no existe. Verifica la configuración de la API.'
+      };
+    }
+    
+    return {
+      success: false,
+      error: `Error al obtener la lista de usuarios: ${errorMessage}`
     };
   }
 }

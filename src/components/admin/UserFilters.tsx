@@ -4,22 +4,22 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, Filter, X } from 'lucide-react'
-import { UserFilters as UserFiltersType } from '@/lib/cognito-admin'
+import { AdminUserFilters } from '@/config/api'
 
 interface UserFiltersProps {
-  filters: UserFiltersType
-  onFilterChange: (filters: UserFiltersType) => void
+  filters: AdminUserFilters
+  onFilterChange: (filters: AdminUserFilters) => void
 }
 
 export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
-  const [localFilters, setLocalFilters] = useState<UserFiltersType>(filters)
+  const [localFilters, setLocalFilters] = useState<AdminUserFilters>(filters)
   const [showAdvanced, setShowAdvanced] = useState(false)
 
   useEffect(() => {
     setLocalFilters(filters)
   }, [filters])
 
-  const handleFilterChange = (key: keyof UserFiltersType, value: string) => {
+  const handleFilterChange = (key: keyof AdminUserFilters, value: string) => {
     const newFilters = { ...localFilters, [key]: value }
     setLocalFilters(newFilters)
   }
@@ -35,6 +35,7 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
       plan: 'all'
     }
     setLocalFilters(clearedFilters)
+    // Enviar filtros vacíos para traer todos los usuarios
     onFilterChange(clearedFilters)
   }
 
@@ -136,7 +137,7 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
           )}
           {filters.status !== 'all' && (
             <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 rounded-full text-xs">
-              Estado: {filters.status === 'active' ? 'Activo' : filters.status === 'inactive' ? 'Inactivo' : 'Pendiente'}
+              Estado: {filters.status === 'CONFIRMED' ? 'Activo' : filters.status === 'DISABLED' ? 'Inactivo' : 'Pendiente'}
               <button
                 onClick={() => handleFilterChange('status', 'all')}
                 className="ml-1 hover:text-green-600"
@@ -147,7 +148,7 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
           )}
           {filters.plan !== 'all' && (
             <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 rounded-full text-xs">
-              Plan: {filters.plan === 'monthly' ? 'Mensual' : filters.plan === 'yearly' ? 'Anual' : 'Gratis'}
+              Plan: {filters.plan === 'Mensual' ? 'Mensual' : filters.plan === 'Anual' ? 'Anual' : 'Semanal'}
               <button
                 onClick={() => handleFilterChange('plan', 'all')}
                 className="ml-1 hover:text-purple-600"

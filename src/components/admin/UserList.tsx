@@ -5,20 +5,27 @@ import { Button } from '@/components/ui/button'
 import { Edit, Eye, MoreHorizontal, CheckCircle, XCircle, User } from 'lucide-react'
 import { UserEditModal } from './UserEditModal'
 import { UserViewModal } from './UserViewModal'
-import { User as UserType, Pagination } from '@/lib/cognito-admin'
+import { AdminUser, AdminPagination } from '@/config/api'
+import { formatDateOnly, formatDateTime } from '@/lib/utils'
 
 interface UserListProps {
-  users: UserType[]
+  users: AdminUser[]
   loading: boolean
-  pagination: Pagination
+  pagination: AdminPagination
   onPageChange: (page: number) => void
   onUserUpdate: () => void
 }
 
 export function UserList({ users, loading, pagination, onPageChange, onUserUpdate }: UserListProps) {
-  const [selectedUser, setSelectedUser] = useState<UserType | null>(null)
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
+
+  // Calculate pagination for frontend
+  const startIndex = (pagination.page - 1) * pagination.limit
+  const endIndex = startIndex + pagination.limit
+  const currentPageUsers = users.slice(startIndex, endIndex)
+  const totalPages = Math.ceil(users.length / pagination.limit)
 
   // Function to capitalize names (first letter uppercase, rest lowercase)
   const capitalizeName = (name: string): string => {
@@ -26,12 +33,12 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
     return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
   }
 
-  const handleEditUser = (user: UserType) => {
+  const handleEditUser = (user: AdminUser) => {
     setSelectedUser(user)
     setShowEditModal(true)
   }
 
-  const handleViewUser = (user: UserType) => {
+  const handleViewUser = (user: AdminUser) => {
     setSelectedUser(user)
     setShowViewModal(true)
   }
@@ -53,13 +60,11 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
 
   const getStatusBadge = (status: string, statusText: string) => {
     const statusConfig = {
-      active: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', icon: CheckCircle },
-      inactive: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', icon: XCircle },
-      pending: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', icon: MoreHorizontal },
-      disabled: { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300', icon: XCircle }
+      CONFIRMED: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', icon: CheckCircle },
+      DISABLED: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', icon: XCircle },
     }
     
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.CONFIRMED
     const Icon = config.icon
     
     return (
@@ -94,7 +99,7 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
     )
   }
 
-  const totalPages = Math.ceil(pagination.total / pagination.limit)
+
 
   if (loading) {
     return (
@@ -135,16 +140,21 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {users.map((user) => {
+            {currentPageUsers.map((user, index) => {
               console.log('User data:', {
                 id: user.id,
                 email: user.email,
                 status: user.status,
-                statusText: user.statusText,
+                status_text: user.status_text,
                 plan: user.plan
               });
+              
+              // Ensure we have a unique key
+              const uniqueKey = user.id || `user-${index}`;
+              console.log('Using key:', uniqueKey);
+              
               return (
-                <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <tr key={uniqueKey} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
@@ -154,7 +164,7 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {capitalizeName(user.firstName)} {capitalizeName(user.lastName)}
+                          {capitalizeName(user.first_name)} {capitalizeName(user.last_name)}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
                           {user.email}
@@ -163,17 +173,17 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(user.status, user.statusText)}
+                    {getStatusBadge(user.status, user.status_text)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {getPlanBadge(user.plan)}
+                    {getPlanBadge(user.plan || 'Mensual')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(user.createdAt).toLocaleDateString('es-ES')}
+                    {formatDateOnly(user.createdAt)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {user.lastLogin 
-                      ? new Date(user.lastLogin).toLocaleDateString('es-ES')
+                      ? formatDateOnly(user.lastLogin)
                       : 'Nunca'
                     }
                   </td>
@@ -210,8 +220,8 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700 dark:text-gray-300">
               Mostrando {((pagination.page - 1) * pagination.limit) + 1} a{' '}
-              {Math.min(pagination.page * pagination.limit, pagination.total)} de{' '}
-              {pagination.total} usuarios
+              {Math.min(pagination.page * pagination.limit, users.length)} de{' '}
+              {users.length} usuarios
             </div>
             <div className="flex gap-2">
               <Button

@@ -9,7 +9,12 @@ import { UserStats } from '@/components/admin/UserStats'
 import { UserCreateModal } from '@/components/admin/UserCreateModal'
 import { Button } from '@/components/ui/button'
 import { Plus, Download, RefreshCw } from 'lucide-react'
-import { User, UserFilters as UserFiltersType, Pagination } from '@/lib/cognito-admin'
+import { 
+  getAdminUsers, 
+  AdminUser, 
+  AdminUserFilters, 
+  AdminPagination 
+} from '@/config/api'
 
 export default function UsersAdminPage() {
   return (
@@ -20,42 +25,44 @@ export default function UsersAdminPage() {
 }
 
 function UsersAdminContent() {
-  const [users, setUsers] = useState<User[]>([])
+  const { user } = useAuth()
+  const [allUsers, setAllUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [filters, setFilters] = useState<UserFiltersType>({
+  const [filters, setFilters] = useState<AdminUserFilters>({
     search: '',
     status: 'all',
     plan: 'all'
   })
-  const [pagination, setPagination] = useState<Pagination>({
+  const [pagination, setPagination] = useState<AdminPagination>({
     page: 1,
     limit: 10,
     total: 0
   })
 
-  // Fetch users from API
+  // Fetch all users from external API
   const fetchUsers = async () => {    
     setLoading(true)
+    setError(null)
     try {
-      const response = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ filters, pagination }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch users')
+      const result = await getAdminUsers(filters, user?.token)
+      
+      if (result.success && result.data) {
+        const users = result.data.users || result.data
+        setAllUsers(users)
+        setPagination(prev => ({ ...prev, total: users.length }))
+      } else {
+        console.error('Error fetching users:', result.error)
+        setError(result.error || 'Error desconocido al obtener usuarios')
+        setAllUsers([])
+        setPagination(prev => ({ ...prev, total: 0 }))
       }
-
-      const data = await response.json()
-      setUsers(data.users)
-      setPagination(prev => ({ ...prev, total: data.total }))
     } catch (error) {
       console.error('Error fetching users:', error)
-      // Show error message to user
+      setError('Error de conexión al obtener usuarios')
+      setAllUsers([])
+      setPagination(prev => ({ ...prev, total: 0 }))
     } finally {
       setLoading(false)
     }
@@ -63,10 +70,17 @@ function UsersAdminContent() {
 
   useEffect(() => {
     fetchUsers()
-  }, [filters, pagination.page])
+  }, [filters])
 
-  const handleFilterChange = (newFilters: UserFiltersType) => {
-    setFilters(newFilters)
+  const handleFilterChange = (newFilters: AdminUserFilters) => {
+    // Normalizar filtros: convertir cadenas vacías a undefined para traer todos los usuarios
+    const normalizedFilters = {
+      search: newFilters.search?.trim() || undefined,
+      status: newFilters.status === 'all' ? undefined : newFilters.status,
+      plan: newFilters.plan === 'all' ? undefined : newFilters.plan
+    }
+    
+    setFilters(normalizedFilters)
     setPagination(prev => ({ ...prev, page: 1 }))
   }
 
@@ -78,7 +92,7 @@ function UsersAdminContent() {
   const handleUserCreated = () => {
     fetchUsers() // Refresh the user list
   }
-  const { user, signOut, refreshUserData } = useAuth()
+  const { signOut, refreshUserData } = useAuth()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
@@ -120,8 +134,39 @@ function UsersAdminContent() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                  Error al cargar usuarios
+                </h3>
+                <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                  {error}
+                </div>
+                <div className="mt-4">
+                  <Button
+                    onClick={fetchUsers}
+                    variant="outline"
+                    size="sm"
+                    className="text-red-700 border-red-300 hover:bg-red-50 dark:text-red-300 dark:border-red-700 dark:hover:bg-red-900/20"
+                  >
+                    Reintentar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
-        <UserStats users={users} />
+        <UserStats users={allUsers} />
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
@@ -134,7 +179,7 @@ function UsersAdminContent() {
         {/* Users List */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
           <UserList
-            users={users}
+            users={allUsers}
             loading={loading}
             pagination={pagination}
             onPageChange={handlePageChange}

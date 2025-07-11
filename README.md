@@ -622,9 +622,10 @@ https://eo6cj32bch.execute-api.us-east-2.amazonaws.com/prod/api/v1
 - `POST /auth/forgot-password/` - Solicitar reset de contraseña
 - `POST /auth/reset-password/` - Reset de contraseña
 - `GET /auth/profile/` - Obtener perfil de usuario
+- `POST /admin/users` - Lista de usuarios (administración)
 
 #### Autenticación
-Todas las peticiones a la API requieren un API key que debe enviarse en el header `x-api-key`.
+Todas las peticiones a la API requieren un API key que debe enviarse en el header `x-api-key`. Algunos endpoints adicionalmente requieren un token de autorización en el header `Authorization: Bearer <token>`.
 
 #### Solución de CORS
 Si experimentas errores de CORS, verifica que:
@@ -660,6 +661,47 @@ const registerResult = await registerUser({
 // Obtener perfil de usuario
 const profileResult = await getUserProfile(token)
 ```
+
+#### Uso de la API de Administración
+
+La aplicación incluye funcionalidades de administración de usuarios que utilizan una API externa:
+
+```typescript
+import { getAdminUsers } from '@/config/api'
+
+// Obtener TODOS los usuarios (sin filtros)
+const allUsersResult = await getAdminUsers({}, adminToken)
+
+// Obtener usuarios con filtros específicos
+const filteredUsersResult = await getAdminUsers({
+  search: 'juan',           // Búsqueda por nombre, email o teléfono (se envía como 'filter')
+  status: 'active',         // Filtrar por estado: 'active', 'inactive', 'pending', 'disabled'
+  plan: 'monthly'           // Filtrar por plan: 'monthly', 'yearly', 'free'
+}, adminToken)
+
+// Obtener usuarios con filtros parciales (null, '' o 'all' traen todos)
+const partialFilterResult = await getAdminUsers({
+  search: '',               // Cadena vacía = todos los usuarios
+  status: 'all',            // 'all' = todos los estados
+  plan: null                // null = todos los planes
+}, adminToken)
+
+// La paginación se maneja en el frontend para mejor UX
+// Los usuarios se filtran y paginan localmente
+```
+
+**Características de la API de Administración:**
+- **Método**: `POST /admin/users`
+- **Body**: `{ filter?, status?, plan? }` (filtros opcionales)
+- **Headers requeridos**:
+  - `x-api-key`: API key para autenticación
+  - `Authorization`: Bearer token (opcional, para permisos específicos)
+- **Filtros Opcionales**: `null`, `''` o `'all'` traen todos los usuarios
+- **Búsqueda**: Por nombre, email o teléfono (parámetro `filter`)
+- **Estados**: `'active'`, `'inactive'`, `'pending'`, `'disabled'`
+- **Planes**: `'monthly'`, `'yearly'`, `'free'`
+- **Paginación Frontend**: Todos los usuarios se cargan de una vez
+- **Respuesta**: Lista completa de usuarios con información detallada
 
 #### Testing de la API
 

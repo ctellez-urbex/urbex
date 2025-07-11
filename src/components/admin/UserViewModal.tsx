@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, User, Mail, Phone, Calendar, CreditCard, Clock, CheckCircle, XCircle, MoreHorizontal, RefreshCw } from 'lucide-react'
-import { User as UserType } from '@/lib/cognito-admin'
+import { AdminUser } from '@/config/api'
 
 interface UserViewModalProps {
-  user: UserType
+  user: AdminUser
   onClose: () => void
 }
 
 export function UserViewModal({ user, onClose }: UserViewModalProps) {
-  const [currentUser, setCurrentUser] = useState<UserType>(user)
+  const [currentUser, setCurrentUser] = useState<AdminUser>(user)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -65,7 +65,7 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
     const statusConfig = {
       active: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', icon: CheckCircle, text: 'Activo' },
       inactive: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', icon: XCircle, text: 'Inactivo' },
-      pending: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', icon: MoreHorizontal, text: 'Deshabilitado' }
+      pending: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', icon: MoreHorizontal, text: 'Pendiente' }
     }
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
@@ -83,7 +83,7 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
     const planConfig = {
       Mensual: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300', text: 'Plan Mensual' },
       Anual: { color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300', text: 'Plan Anual' },
-      Gratis: { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300', text: 'Plan Gratis' }
+      Semanal: { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300', text: 'Plan Semanal' }
     }
     
     const config = planConfig[plan as keyof typeof planConfig] || planConfig.Mensual
@@ -156,12 +156,12 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {capitalizeName(currentUser.firstName)} {capitalizeName(currentUser.lastName)}
+                    {capitalizeName(currentUser.first_name)} {capitalizeName(currentUser.last_name)}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">{currentUser.email}</p>
                   <div className="flex gap-2 mt-2">
                     {getStatusBadge(currentUser.status)}
-                    {getPlanBadge(currentUser.plan)}
+                    {getPlanBadge(currentUser.plan || '')}
                   </div>
                 </div>
               </div>
@@ -183,12 +183,12 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
                       </div>
                     </div>
                     
-                    {currentUser.phone && (
+                    {currentUser.phone_number && (
                       <div className="flex items-center gap-3">
                         <Phone className="w-4 h-4 text-gray-400" />
                         <div>
                           <p className="text-sm text-gray-500 dark:text-gray-400">Teléfono</p>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{currentUser.phone}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{currentUser.phone_number}</p>
                         </div>
                       </div>
                     )}
@@ -246,11 +246,11 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {currentUser.status === 'active' ? '✓' : currentUser.status === 'disabled' ? '✗' : '?'}
+                        {currentUser.status === 'CONFIRMED' ? '✓' : currentUser.status === 'DISABLED' ? '✗' : '?'}
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Estado</p>
                       <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                        {currentUser.status === 'active' ? 'Activo' : currentUser.status === 'disabled' ? 'Deshabilitado' : 'Pendiente'}
+                        {currentUser.status === 'CONFIRMED' ? 'Activo' : currentUser.status === 'DISABLED' ? 'Deshabilitado' : 'Pendiente'}
                       </p>
                     </div>
                     

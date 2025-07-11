@@ -4,28 +4,34 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { X, Save, User, Mail, Phone, Calendar, CreditCard } from 'lucide-react'
-import { User as UserType, UserUpdateData } from '@/lib/cognito-admin'
+import { AdminUser } from '@/config/api'
+import { formatDateOnly } from '@/lib/utils'
 
 interface UserEditModalProps {
-  user: UserType
+  user: AdminUser
   onClose: () => void
   onUpdate: () => void
 }
 
+interface UserUpdateData {
+  first_name: string;
+  last_name: string;
+  phone_number?: string;
+  status: 'CONFIRMED' | 'DISABLED' | 'PENDING';
+  plan?: string;
+}
+
 export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
-  const planMap: Record<string, 'monthly' | 'yearly' | 'free'> = {
-    'Mensual': 'monthly',
-    'Anual': 'yearly',
-    'Semanal': 'free',
-    'monthly': 'monthly',
-    'yearly': 'yearly',
-    'free': 'free'
+  const planMap: Record<string, 'Mensual' | 'Anual' | 'Semanal'> = {
+    'Mensual': 'Mensual',
+    'Anual': 'Anual',
+    'Semanal': 'Semanal'
   };
-  const initialPlan = planMap[user.plan] || 'Mensual';
+  const initialPlan = planMap[user.plan || ''] || 'Mensual';
   const [formData, setFormData] = useState<UserUpdateData>({
-    firstName: user.firstName,
-    lastName: user.lastName,
-    phone: user.phone,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    phone_number: user.phone_number,
     status: user.status,
     plan: initialPlan
   })
@@ -113,7 +119,7 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
   }
 
   const handleStatusToggle = async () => {
-    const newStatus = formData.status === 'active' ? 'inactive' : 'active'
+    const newStatus = formData.status === 'CONFIRMED' ? 'DISABLED' : 'CONFIRMED'
     setFormData(prev => ({ ...prev, status: newStatus }))
     
     try {
@@ -147,7 +153,7 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
                 Editar Usuario
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {capitalizeName(user.firstName)} {capitalizeName(user.lastName)}
+                {capitalizeName(user.first_name)} {capitalizeName(user.last_name)}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {user.email}
@@ -197,8 +203,8 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
               </label>
               <Input
                 type="text"
-                value={formData.firstName}
-                onChange={(e) => handleInputChange('firstName', e.target.value)}
+                value={formData.first_name}
+                onChange={(e) => handleInputChange('first_name', e.target.value)}
                 placeholder="Nombre del usuario"
                 required
               />
@@ -209,8 +215,8 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
               </label>
               <Input
                 type="text"
-                value={formData.lastName}
-                onChange={(e) => handleInputChange('lastName', e.target.value)}
+                value={formData.last_name}
+                onChange={(e) => handleInputChange('last_name', e.target.value)}
                 placeholder="Apellido del usuario"
                 required
               />
@@ -225,8 +231,8 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
             </label>
             <Input
               type="tel"
-              value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
+              value={formData.phone_number || ''}
+              onChange={(e) => handleInputChange('phone_number', e.target.value)}
               placeholder="+57 300 123 4567"
             />
           </div>
@@ -259,7 +265,7 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
                       : 'text-red-600 border-red-600 hover:bg-red-50'
                   }`}
                 >
-                  {formData.status === 'active' ? 'Desactivar' : 'Activar'}
+                  {formData.status === 'CONFIRMED' ? 'Desactivar' : 'Activar'}
                 </Button>
               </div>
             </div>
@@ -284,12 +290,12 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-2">
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <Calendar className="w-4 h-4" />
-              <span>Fecha de registro: {new Date(user.createdAt).toLocaleDateString('es-ES')}</span>
+              <span>Fecha de registro: {formatDateOnly(user.createdAt)}</span>
             </div>
             {user.lastLogin && (
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <User className="w-4 h-4" />
-                <span>Último acceso: {new Date(user.lastLogin).toLocaleDateString('es-ES')}</span>
+                <span>Último acceso: {formatDateOnly(user.lastLogin)}</span>
               </div>
             )}
           </div>

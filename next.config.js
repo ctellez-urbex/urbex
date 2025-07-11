@@ -9,9 +9,6 @@ const nextConfig = {
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
   reactStrictMode: true,
-  images: {
-    unoptimized: true,
-  },
   // Configuración para manejar rutas en producción
   assetPrefix: process.env.NODE_ENV === 'production' ? '/' : '/',
   basePath: '',
