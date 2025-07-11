@@ -18,7 +18,7 @@ export function UserStats({ users }: UserStatsProps) {
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
   const recentActiveUsers = users.filter(user => 
-    user.last_login && new Date(user.last_login) > thirtyDaysAgo
+    user.lastLogin && new Date(user.lastLogin) > thirtyDaysAgo
   ).length
 
   const stats = [

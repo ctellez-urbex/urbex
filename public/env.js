@@ -1,5 +1,5 @@
 // Environment Configuration for Static Frontend
-// Generated for development environment on 2025-07-11T02:57:29.790Z
+// Generated for production environment on 2025-07-11T03:29:27.846Z
 // This file is loaded by the frontend to access environment variables
 // It's generated during build time and served as static content
 
@@ -8,10 +8,10 @@ window.ENV = {
   "NEXT_PUBLIC_API_KEY": "09mLQ6KO1k6vadXSBQWVR8JvLMH40oPw2HIRTZyW",
   "NEXT_PUBLIC_AWS_REGION": "us-east-2",
   "NEXT_PUBLIC_AWS_USER_POOL_ID": "us-east-2_Fpda5LMX0",
-  "NEXT_PUBLIC_AWS_POOL_CLIENT_ID": "dev_client_id_here",
+  "NEXT_PUBLIC_AWS_POOL_CLIENT_ID": "your_cognito_client_id_here",
   "NEXT_PUBLIC_APP_NAME": "Urbex",
-  "NEXT_PUBLIC_APP_URL": "http://localhost:3000",
-  "NODE_ENV": "development"
+  "NEXT_PUBLIC_APP_URL": "https://urbex.com.co",
+  "NODE_ENV": "production"
 };
 
 // Log environment configuration (only in development)
