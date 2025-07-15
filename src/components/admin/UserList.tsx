@@ -58,23 +58,7 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
     handleCloseEditModal()
   }
 
-  const getStatusBadge = (status: string, statusText: string) => {
-    const statusConfig = {
-      CONFIRMED: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', icon: CheckCircle },
-      DISABLED: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', icon: XCircle },
-    }
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.CONFIRMED
-    const Icon = config.icon
-    
-    return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
-        <Icon className="w-3 h-3" />
-        {statusText}
-      </span>
-    )
-  }
-
+  
   const getPlanBadge = (plan: string) => {
     // Map plan values to display names
     const planDisplayNames: Record<string, string> = {
@@ -146,7 +130,8 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
                 email: user.email,
                 status: user.status,
                 status_text: user.status_text,
-                plan: user.plan
+                plan: user.plan,
+                enabled: user.enabled
               });
               
               // Ensure we have a unique key
@@ -172,8 +157,10 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(user.status, user.status_text)}
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <span className={`text-2xl font-bold ${user.enabled ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {user.enabled ? '✓' : '✗'}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getPlanBadge(user.plan || 'Mensual')}

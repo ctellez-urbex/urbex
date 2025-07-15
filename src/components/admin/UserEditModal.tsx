@@ -82,7 +82,7 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
   }
 
   const handleStatusToggle = async () => {
-    const newStatus: 'CONFIRMED' | 'DISABLED' = user.status === 'CONFIRMED' ? 'DISABLED' : 'CONFIRMED'
+    const newStatus: 'ENABLED' | 'DISABLED' = user.enabled === true ? 'DISABLED' : 'ENABLED'
     
     try {
       console.log('🔄 Cambiando estado del usuario:', user.user_id, newStatus)
@@ -110,14 +110,13 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
     }
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (enabled: boolean) => {
     const statusConfig = {
-      CONFIRMED: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', text: 'Activo' },
+      ENABLED: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', text: 'Activo' },
       DISABLED: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', text: 'Inactivo' },
-      PENDING: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', text: 'Pendiente' }
     }
     
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING
+    const config = statusConfig[enabled === true ? 'ENABLED' : 'DISABLED'] || statusConfig.ENABLED
     
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
@@ -195,7 +194,7 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
               </h3>
               <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
               <div className="flex gap-2 mt-2">
-                {getStatusBadge(user.status)}
+                {getStatusBadge(user.enabled)}
                 {getPlanBadge(user.plan || '')}
               </div>
             </div>
@@ -295,16 +294,20 @@ export function UserEditModal({ user, onClose, onUpdate }: UserEditModalProps) {
                   Estado del Usuario
                 </h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {user.status === 'CONFIRMED' ? 'Usuario activo' : 'Usuario inactivo'}
+                  {user.enabled === true ? 'Usuario activo' : 'Usuario inactivo'}
                 </p>
               </div>
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleStatusToggle}
-                className="flex items-center gap-2"
+                className={`flex items-center gap-2 ${
+                  user.enabled === true 
+                    ? 'border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:border-red-500' 
+                    : 'border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400 dark:border-green-600 dark:text-green-400 dark:hover:bg-green-900/20 dark:hover:border-green-500'
+                }`}
               >
-                {user.status === 'CONFIRMED' ? (
+                {user.enabled === true ? (
                   <>
                     <ToggleLeft className="w-4 h-4" />
                     Desactivar

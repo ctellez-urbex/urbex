@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, User, Mail, Phone, Calendar, CreditCard, Clock, CheckCircle, XCircle, MoreHorizontal, RefreshCw } from 'lucide-react'
+import { X, User, Mail, Phone, Calendar, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
 import { AdminUser, getAdminUserById } from '@/config/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatDateOnly, formatDateTime } from '@/lib/utils'
@@ -13,10 +13,7 @@ interface UserViewModalProps {
 }
 
 export function UserViewModal({ user, onClose }: UserViewModalProps) {
-  const { user: authUser } = useAuth()
-  const [currentUser, setCurrentUser] = useState<AdminUser>(user)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [currentUser] = useState<AdminUser>(user)
 
   // Function to capitalize names (first letter uppercase, rest lowercase)
   const capitalizeName = (name: string): string => {
@@ -24,57 +21,19 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
     return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
   }
 
-  // Fetch latest user data from external API
-  const fetchUserData = async () => {
-    setLoading(true)
-    setError('')
-    
-    try {
-      console.log('🔄 Fetching user data for:', user.user_id)
-      
-      // Verificar que tenemos el token de autenticación
-      if (!authUser?.token) {
-        throw new Error('No hay token de autenticación disponible. Por favor, inicia sesión nuevamente.')
-      }
-      
-      const result = await getAdminUserById(user.user_id, authUser.token)
-      
-      if (result.success && result.data) {
-        console.log('✅ User data fetched successfully:', result.data)
-        setCurrentUser(result.data)
-      } else {
-        console.error('❌ Failed to fetch user data:', result.error)
-        setError(result.error || 'Error al cargar datos del usuario')
-      }
-    } catch (error) {
-      console.error('❌ Error fetching user data:', error)
-      setError(error instanceof Error ? error.message : 'Error al cargar datos del usuario')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Fetch data on mount and when user changes
-  useEffect(() => {
-    if (user.user_id) {
-      fetchUserData()
-    }
-  }, [user.user_id])
-
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (enabled: boolean) => {
     const statusConfig = {
-      active: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', icon: CheckCircle, text: 'Activo' },
-      inactive: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', icon: XCircle, text: 'Inactivo' },
-      pending: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', icon: MoreHorizontal, text: 'Pendiente' }
+      ENABLED: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', icon: CheckCircle, text: 'Activo' },
+      DISABLED: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', icon: XCircle, text: 'Inactivo' },
     }
     
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
+    const config = statusConfig[enabled === true ? 'ENABLED' : 'DISABLED'] || statusConfig.ENABLED
     const Icon = config.icon
     
     return (
       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
         <Icon className="w-4 h-4" />
-        {config.text}
+        {enabled ? '✓' : '✗'} {config.text}
       </span>
     )
   }
@@ -113,41 +72,18 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={fetchUserData}
-              disabled={loading}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          {error && (
-            <div className="p-3 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-md text-sm">
-              {error}
-            </div>
-          )}
-
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
-              <span className="ml-2 text-gray-600 dark:text-gray-400">Cargando datos...</span>
-            </div>
-          ) : (
             <>
               {/* User Avatar and Basic Info */}
               <div className="flex items-center gap-4">
@@ -160,7 +96,7 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">{currentUser.email}</p>
                   <div className="flex gap-2 mt-2">
-                    {getStatusBadge(currentUser.status)}
+                    {getStatusBadge(currentUser.enabled)}
                     {getPlanBadge(currentUser.plan || '')}
                   </div>
                 </div>
@@ -236,11 +172,11 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {currentUser.status === 'CONFIRMED' ? '✓' : currentUser.status === 'DISABLED' ? '✗' : '?'}
+                        {currentUser.enabled === true ? '✓' : currentUser.enabled === false ? '✗' : '?'}
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Estado</p>
                       <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                        {currentUser.status === 'CONFIRMED' ? 'Activo' : currentUser.status === 'DISABLED' ? 'Deshabilitado' : 'Pendiente'}
+                        {currentUser.enabled === true ? 'Activo' : 'Deshabilitado'}
                       </p>
                     </div>
                     
@@ -266,9 +202,8 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
                   </div>
                 </div>
               </div>
-            </>
-          )}
-        </div>
+                          </>
+          </div>
 
         {/* Footer */}
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">

@@ -9,9 +9,9 @@ interface UserStatsProps {
 
 export function UserStats({ users }: UserStatsProps) {
   const totalUsers = users.length
-  const activeUsers = users.filter(user => user.status === 'CONFIRMED').length
-  const inactiveUsers = users.filter(user => user.status === 'DISABLED').length
-  const pendingUsers = users.filter(user => user.status === 'PENDING').length
+  const activeUsers = users.filter(user => user.enabled === true).length
+  const inactiveUsers = users.filter(user => user.enabled === false).length
+  const pendingUsers = users.filter(user => user.enabled === null).length
   
   // Calculate plan statistics more robustly
   const planStats = users.reduce((acc, user) => {

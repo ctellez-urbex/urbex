@@ -507,12 +507,13 @@ export interface AdminUser {
   first_name: string;
   last_name: string;
   phone_number?: string;
-  status: 'CONFIRMED' | 'DISABLED' | 'PENDING';
+  status: 'ENABLED' | 'DISABLED';
   status_text: string;
   plan?: string;
   createdAt: string;
   lastLogin?: string;
   su?: string;
+  enabled: boolean;
 }
 
 export interface AdminUserFilters {
@@ -552,7 +553,7 @@ export interface UpdateUserData {
 }
 
 export interface UpdateUserStatusData {
-  status: 'CONFIRMED' | 'DISABLED' | 'PENDING';
+  status: 'ENABLED' | 'DISABLED';
 }
 
 export interface UpdateUserResponse {
@@ -616,7 +617,7 @@ export async function getAdminUsers(
       body: JSON.stringify(requestBody)
     });
     
-    console.log('✅ Admin users response:', response);
+    console.log('✅ --------- Admin users response:', response);
     
     return {
       success: true,
