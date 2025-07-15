@@ -49,7 +49,9 @@ export const API_CONFIG = {
     RESET_PASSWORD: '/auth/reset-password',
     USER_PROFILE: '/auth/me',
     ADMIN_USERS: '/admin/users',
-    ADMIN_USER: '/admin/user/email'
+    ADMIN_USER: '/admin/user/email',
+    ADMIN_USER_BY_ID: '/admin/user',
+    ADMIN_USER_STATUS: '/admin/user'
   }
 } as const;
 
@@ -162,6 +164,75 @@ export async function sendContactForm(formData: {
  */
 export async function healthCheck() {
   return apiRequest(API_CONFIG.ENDPOINTS.HEALTH);
+}
+
+/**
+ * Función para test de conectividad y configuración
+ * 
+ * @returns Promise con información de diagnóstico
+ */
+export async function testApiConnection(): Promise<{
+  success: boolean;
+  error?: string;
+  details: {
+    baseUrl: string;
+    apiKeyConfigured: boolean;
+    apiKeyLength: number;
+    connectivity: boolean;
+    response?: any;
+  };
+}> {
+  try {
+    console.log('🔍 Testing API connection...');
+    
+    const details: {
+      baseUrl: string;
+      apiKeyConfigured: boolean;
+      apiKeyLength: number;
+      connectivity: boolean;
+      response?: any;
+    } = {
+      baseUrl: API_CONFIG.BASE_URL,
+      apiKeyConfigured: !!API_CONFIG.API_KEY,
+      apiKeyLength: API_CONFIG.API_KEY?.length || 0,
+      connectivity: false
+    };
+    
+    // Test de conectividad básico
+    const response = await fetch(API_CONFIG.BASE_URL, {
+      method: 'HEAD',
+      headers: {
+        'x-api-key': API_CONFIG.API_KEY
+      }
+    });
+    
+    details.connectivity = response.ok || response.status !== 0;
+    details.response = {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    };
+    
+    console.log('✅ API connection test result:', details);
+    
+    return {
+      success: true,
+      details
+    };
+  } catch (error) {
+    console.error('❌ API connection test failed:', error);
+    
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+      details: {
+        baseUrl: API_CONFIG.BASE_URL,
+        apiKeyConfigured: !!API_CONFIG.API_KEY,
+        apiKeyLength: API_CONFIG.API_KEY?.length || 0,
+        connectivity: false
+      }
+    };
+  }
 }
 
 /**
@@ -431,7 +502,7 @@ export async function getUserProfile(token: string) {
  * Tipos para administración de usuarios
  */
 export interface AdminUser {
-  id: string;
+  user_id: string;
   email: string;
   first_name: string;
   last_name: string;
@@ -470,6 +541,23 @@ export interface AdminUsersResponse {
 export interface AdminUserResponse {
   success: boolean;
   data?: AdminUser;
+  error?: string;
+}
+
+export interface UpdateUserData {
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+  plan?: string;
+}
+
+export interface UpdateUserStatusData {
+  status: 'CONFIRMED' | 'DISABLED' | 'PENDING';
+}
+
+export interface UpdateUserResponse {
+  success: boolean;
+  message?: string;
   error?: string;
 }
 
@@ -668,6 +756,318 @@ export async function getAdminUser(
     return {
       success: false,
       error: `Error al obtener datos del usuario: ${errorMessage}`
+    };
+  }
+}
+
+/**
+ * Función para obtener datos de un usuario específico por ID desde la API externa
+ * 
+ * @param userId - ID del usuario a obtener
+ * @param token - Token de autenticación del administrador
+ * @returns Promise con los datos del usuario
+ */
+export async function getAdminUserById(
+  userId: string, 
+  token?: string
+): Promise<AdminUserResponse> {
+  try {
+    console.log('🔍 Getting admin user by ID:', {
+      userId,
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      apiKeyConfigured: !!API_CONFIG.API_KEY,
+      apiKeyLength: API_CONFIG.API_KEY?.length || 0,
+      baseUrl: API_CONFIG.BASE_URL,
+      endpoint: `${API_CONFIG.ENDPOINTS.ADMIN_USER_BY_ID}/${userId}`,
+      fullUrl: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN_USER_BY_ID}/${userId}`
+    });
+    
+    // Verificar que tenemos el API key
+    if (!API_CONFIG.API_KEY) {
+      throw new Error('API key no configurada');
+    }
+    
+    // Verificar que tenemos el token
+    if (!token) {
+      throw new Error('Token de autenticación requerido');
+    }
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+      'Authorization': `Bearer ${token}`
+    };
+    
+    console.log('🔑 Headers:', {
+      'Content-Type': headers['Content-Type'],
+      'x-api-key': headers['x-api-key'] ? '***' : 'MISSING',
+      'Authorization': headers['Authorization'] ? 'Bearer ***' : 'MISSING'
+    });
+    
+    const response = await apiRequest<any>(`${API_CONFIG.ENDPOINTS.ADMIN_USER_BY_ID}/${userId}`, {
+      method: 'GET',
+      headers
+    });
+    
+    console.log('✅ Admin user by ID response:', response);
+    
+    return {
+      success: true,
+      data: response.data || response
+    };
+  } catch (error) {
+    console.error('❌ Get Admin User by ID API Error:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      hasToken: !!token,
+      fullError: error
+    });
+    
+    // Manejar errores específicos del servidor
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    
+    if (errorMessage.includes('404')) {
+      return {
+        success: false,
+        error: 'Usuario no encontrado'
+      };
+    }
+    
+    if (errorMessage.includes('401') || errorMessage.includes('403')) {
+      return {
+        success: false,
+        error: 'No tienes permisos para acceder a este usuario. Verifica tu token de autenticación.'
+      };
+    }
+    
+    if (errorMessage.includes('500')) {
+      return {
+        success: false,
+        error: 'El servidor no está disponible en este momento. Por favor, intenta más tarde.'
+      };
+    }
+    
+    return {
+      success: false,
+      error: `Error al obtener datos del usuario: ${errorMessage}`
+    };
+  }
+}
+
+/**
+ * Función para actualizar datos de un usuario específico desde la API externa
+ * 
+ * @param userId - ID del usuario a actualizar
+ * @param userData - Datos del usuario a actualizar
+ * @param token - Token de autenticación del administrador
+ * @returns Promise con la respuesta de actualización
+ */
+export async function updateAdminUser(
+  userId: string,
+  userData: UpdateUserData,
+  token?: string
+): Promise<UpdateUserResponse> {
+  try {
+    console.log('🔍 Updating admin user:', {
+      userId,
+      userData,
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      apiKeyConfigured: !!API_CONFIG.API_KEY,
+      apiKeyLength: API_CONFIG.API_KEY?.length || 0,
+      baseUrl: API_CONFIG.BASE_URL,
+      endpoint: `${API_CONFIG.ENDPOINTS.ADMIN_USER_BY_ID}/${userId}`,
+      fullUrl: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN_USER_BY_ID}/${userId}`
+    });
+    
+    // Verificar que tenemos el API key
+    if (!API_CONFIG.API_KEY) {
+      throw new Error('API key no configurada');
+    }
+    
+    // Verificar que tenemos el token
+    if (!token) {
+      throw new Error('Token de autenticación requerido');
+    }
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+      'Authorization': `Bearer ${token}`
+    };
+    
+    console.log('🔑 Headers:', {
+      'Content-Type': headers['Content-Type'],
+      'x-api-key': headers['x-api-key'] ? '***' : 'MISSING',
+      'Authorization': headers['Authorization'] ? 'Bearer ***' : 'MISSING'
+    });
+    
+    const response = await apiRequest<any>(`${API_CONFIG.ENDPOINTS.ADMIN_USER_BY_ID}/${userId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(userData)
+    });
+    
+    console.log('✅ Update admin user response:', response);
+    
+    return {
+      success: true,
+      message: response.message || 'Usuario actualizado correctamente'
+    };
+  } catch (error) {
+    console.error('❌ Update Admin User API Error:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      userData,
+      hasToken: !!token,
+      fullError: error
+    });
+    
+    // Manejar errores específicos del servidor
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    
+    if (errorMessage.includes('404')) {
+      return {
+        success: false,
+        error: 'Usuario no encontrado'
+      };
+    }
+    
+    if (errorMessage.includes('401') || errorMessage.includes('403')) {
+      return {
+        success: false,
+        error: 'No tienes permisos para actualizar este usuario. Verifica tu token de autenticación.'
+      };
+    }
+    
+    if (errorMessage.includes('400')) {
+      return {
+        success: false,
+        error: 'Datos de usuario inválidos. Verifica la información proporcionada.'
+      };
+    }
+    
+    if (errorMessage.includes('500')) {
+      return {
+        success: false,
+        error: 'El servidor no está disponible en este momento. Por favor, intenta más tarde.'
+      };
+    }
+    
+    return {
+      success: false,
+      error: `Error al actualizar usuario: ${errorMessage}`
+    };
+  }
+}
+
+/**
+ * Función para actualizar el estado de un usuario específico desde la API externa
+ * 
+ * @param userId - ID del usuario a actualizar
+ * @param statusData - Datos del estado a actualizar
+ * @param token - Token de autenticación del administrador
+ * @returns Promise con la respuesta de actualización
+ */
+export async function updateAdminUserStatus(
+  userId: string,
+  statusData: UpdateUserStatusData,
+  token?: string
+): Promise<UpdateUserResponse> {
+  try {
+    console.log('🔍 Updating admin user status:', {
+      userId,
+      statusData,
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      apiKeyConfigured: !!API_CONFIG.API_KEY,
+      apiKeyLength: API_CONFIG.API_KEY?.length || 0,
+      baseUrl: API_CONFIG.BASE_URL,
+      endpoint: `${API_CONFIG.ENDPOINTS.ADMIN_USER_STATUS}/${userId}/status`,
+      fullUrl: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN_USER_STATUS}/${userId}/status`
+    });
+    
+    // Verificar que tenemos el API key
+    if (!API_CONFIG.API_KEY) {
+      throw new Error('API key no configurada');
+    }
+    
+    // Verificar que tenemos el token
+    if (!token) {
+      throw new Error('Token de autenticación requerido');
+    }
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+      'Authorization': `Bearer ${token}`
+    };
+    
+    console.log('🔑 Headers:', {
+      'Content-Type': headers['Content-Type'],
+      'x-api-key': headers['x-api-key'] ? '***' : 'MISSING',
+      'Authorization': headers['Authorization'] ? 'Bearer ***' : 'MISSING'
+    });
+    
+    const response = await apiRequest<any>(`${API_CONFIG.ENDPOINTS.ADMIN_USER_STATUS}/${userId}/status`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(statusData)
+    });
+    
+    console.log('✅ Update admin user status response:', response);
+    
+    return {
+      success: true,
+      message: response.message || 'Estado del usuario actualizado correctamente'
+    };
+  } catch (error) {
+    console.error('❌ Update Admin User Status API Error:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      statusData,
+      hasToken: !!token,
+      fullError: error
+    });
+    
+    // Manejar errores específicos del servidor
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    
+    if (errorMessage.includes('404')) {
+      return {
+        success: false,
+        error: 'Usuario no encontrado'
+      };
+    }
+    
+    if (errorMessage.includes('401') || errorMessage.includes('403')) {
+      return {
+        success: false,
+        error: 'No tienes permisos para actualizar el estado de este usuario. Verifica tu token de autenticación.'
+      };
+    }
+    
+    if (errorMessage.includes('400')) {
+      return {
+        success: false,
+        error: 'Estado de usuario inválido. Verifica el estado proporcionado.'
+      };
+    }
+    
+    if (errorMessage.includes('500')) {
+      return {
+        success: false,
+        error: 'El servidor no está disponible en este momento. Por favor, intenta más tarde.'
+      };
+    }
+    
+    return {
+      success: false,
+      error: `Error al actualizar estado del usuario: ${errorMessage}`
     };
   }
 }

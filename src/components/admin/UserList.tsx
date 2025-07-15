@@ -142,7 +142,7 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {currentPageUsers.map((user, index) => {
               console.log('User data:', {
-                id: user.id,
+                id: user.user_id,
                 email: user.email,
                 status: user.status,
                 status_text: user.status_text,
@@ -150,7 +150,7 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
               });
               
               // Ensure we have a unique key
-              const uniqueKey = user.id || `user-${index}`;
+              const uniqueKey = user.user_id || `user-${index}`;
               console.log('Using key:', uniqueKey);
               
               return (

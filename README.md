@@ -694,7 +694,7 @@ const profileResult = await getUserProfile(token)
 La aplicación incluye funcionalidades de administración de usuarios que utilizan una API externa:
 
 ```typescript
-import { getAdminUsers } from '@/config/api'
+import { getAdminUsers, getAdminUserById, updateAdminUser, updateAdminUserStatus } from '@/config/api'
 
 // Obtener TODOS los usuarios (sin filtros)
 const allUsersResult = await getAdminUsers({}, adminToken)
@@ -706,42 +706,115 @@ const filteredUsersResult = await getAdminUsers({
   plan: 'monthly'           // Filtrar por plan: 'monthly', 'yearly', 'free'
 }, adminToken)
 
-// Obtener usuarios con filtros parciales (null, '' o 'all' traen todos)
-const partialFilterResult = await getAdminUsers({
-  search: '',               // Cadena vacía = todos los usuarios
-  status: 'all',            // 'all' = todos los estados
-  plan: null                // null = todos los planes
+// Obtener datos específicos de un usuario por ID
+const userResult = await getAdminUserById('user123', adminToken)
+
+// Actualizar datos de un usuario
+const updateResult = await updateAdminUser('user123', {
+  first_name: 'Juan',
+  last_name: 'Pérez',
+  phone_number: '+1234567890',
+  plan: 'Mensual'
 }, adminToken)
 
-// La paginación se maneja en el frontend para mejor UX
-// Los usuarios se filtran y paginan localmente
+// Actualizar estado de un usuario
+const statusResult = await updateAdminUserStatus('user123', {
+  status: 'CONFIRMED' // 'CONFIRMED', 'DISABLED', 'PENDING'
+}, adminToken)
 ```
 
 **Características de la API de Administración:**
-- **Método**: `POST /admin/users`
-- **Body**: `{ filter?, status?, plan? }` (filtros opcionales)
+- **Lista de Usuarios**: `POST /admin/users` - Obtener lista con filtros
+- **Usuario por ID**: `GET /admin/users/{id}` - Obtener datos específicos
+- **Actualizar Usuario**: `PUT /admin/users/{id}` - Actualizar información
+- **Actualizar Estado**: `PUT /admin/users/{id}/status` - Cambiar estado
 - **Headers requeridos**:
   - `x-api-key`: API key para autenticación
-  - `Authorization`: Bearer token (opcional, para permisos específicos)
+  - `Authorization`: Bearer token (requerido para todas las operaciones)
 - **Filtros Opcionales**: `null`, `''` o `'all'` traen todos los usuarios
 - **Búsqueda**: Por nombre, email o teléfono (parámetro `filter`)
-- **Estados**: `'active'`, `'inactive'`, `'pending'`, `'disabled'`
-- **Planes**: `'monthly'`, `'yearly'`, `'free'`
+- **Estados**: `'CONFIRMED'`, `'DISABLED'`, `'PENDING'`
+- **Planes**: `'Mensual'`, `'Anual'`, `'Semanal'`
 - **Paginación Frontend**: Todos los usuarios se cargan de una vez
 - **Respuesta**: Lista completa de usuarios con información detallada
 
-#### Testing de la API
+#### Endpoints de Administración de Usuarios
 
-Puedes probar los endpoints en la página `/test-api` que incluye:
-- Health check de la API
-- Prueba de login
-- Prueba de formulario de contacto
+##### GET /admin/users/{id}
+Obtener datos específicos de un usuario por su ID.
 
-### Obtener Credenciales de Mailgun
-1. Regístrate en [Mailgun](https://www.mailgun.com/)
-2. Verifica tu dominio
-3. Obtén tu API key desde el dashboard
-4. Configura las variables de entorno con tus credenciales
+```bash
+GET /prod/api/v1/admin/users/user123
+Headers:
+  Content-Type: application/json
+  x-api-key: <api_key>
+  Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "data": {
+    "id": "user123",
+    "email": "usuario@ejemplo.com",
+    "first_name": "Juan",
+    "last_name": "Pérez",
+    "phone_number": "+1234567890",
+    "status": "CONFIRMED",
+    "status_text": "Activo",
+    "plan": "Mensual",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "lastLogin": "2024-12-15T14:20:00.000Z",
+    "su": "false"
+  }
+}
+```
+
+##### PUT /admin/users/{id}
+Actualizar información de un usuario específico.
+
+```bash
+PUT /prod/api/v1/admin/users/user123
+Headers:
+  Content-Type: application/json
+  x-api-key: <api_key>
+  Authorization: Bearer <token>
+
+Body:
+{
+  "first_name": "Juan Carlos",
+  "last_name": "Pérez García",
+  "phone_number": "+1234567890",
+  "plan": "Anual"
+}
+
+Response:
+{
+  "success": true,
+  "message": "Usuario actualizado correctamente"
+}
+```
+
+##### PUT /admin/users/{id}/status
+Actualizar el estado de un usuario específico.
+
+```bash
+PUT /prod/api/v1/admin/users/user123/status
+Headers:
+  Content-Type: application/json
+  x-api-key: <api_key>
+  Authorization: Bearer <token>
+
+Body:
+{
+  "status": "DISABLED"
+}
+
+Response:
+{
+  "success": true,
+  "message": "Estado del usuario actualizado correctamente"
+}
+```
 
 ## 🏆 Estado del Proyecto
 

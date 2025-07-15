@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, User, Mail, Phone, Calendar, CreditCard, Clock, CheckCircle, XCircle, MoreHorizontal, RefreshCw } from 'lucide-react'
-import { AdminUser, getAdminUser } from '@/config/api'
+import { AdminUser, getAdminUserById } from '@/config/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatDateOnly, formatDateTime } from '@/lib/utils'
 
@@ -30,14 +30,14 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
     setError('')
     
     try {
-      console.log('🔄 Fetching user data for:', user.email)
+      console.log('🔄 Fetching user data for:', user.user_id)
       
       // Verificar que tenemos el token de autenticación
       if (!authUser?.token) {
         throw new Error('No hay token de autenticación disponible. Por favor, inicia sesión nuevamente.')
       }
-         
-      const result = await getAdminUser(user.email, authUser.token)
+      
+      const result = await getAdminUserById(user.user_id, authUser.token)
       
       if (result.success && result.data) {
         console.log('✅ User data fetched successfully:', result.data)
@@ -56,10 +56,10 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
 
   // Fetch data on mount and when user changes
   useEffect(() => {
-    if (user.email) {
+    if (user.user_id) {
       fetchUserData()
     }
-  }, [user.email])
+  }, [user.user_id])
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -68,7 +68,7 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
       pending: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', icon: MoreHorizontal, text: 'Pendiente' }
     }
     
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
     const Icon = config.icon
     
     return (
@@ -161,7 +161,7 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
                   <p className="text-gray-600 dark:text-gray-400">{currentUser.email}</p>
                   <div className="flex gap-2 mt-2">
                     {getStatusBadge(currentUser.status)}
-                    {getPlanBadge(currentUser.plan || 'Mensual')}
+                    {getPlanBadge(currentUser.plan || '')}
                   </div>
                 </div>
               </div>
@@ -256,11 +256,11 @@ export function UserViewModal({ user, onClose }: UserViewModalProps) {
                     
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {currentUser.id ? '✓' : '✗'}
+                        {currentUser.user_id ? '✓' : '✗'}
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">ID</p>
                       <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                        {currentUser.id ? 'Válido' : 'Inválido'}
+                        {currentUser.user_id ? 'Válido' : 'Inválido'}
                       </p>
                     </div>
                   </div>
