@@ -1,5 +1,5 @@
 // Environment Configuration for Static Frontend
-// Generated for development environment on 2025-07-15T21:18:44.586Z
+// Generated for development environment on 2025-07-18T18:32:42.271Z
 // This file is loaded by the frontend to access environment variables
 // It's generated during build time and served as static content
 

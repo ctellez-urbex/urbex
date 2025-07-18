@@ -117,6 +117,7 @@ El dashboard integra datos completos del usuario desde la API externa:
 - **UserStats**: Estadísticas en tiempo real con cálculo robusto de planes
 - **UserEditModal**: Modal para editar información de usuarios
 - **UserViewModal**: Modal para ver detalles completos de usuarios con datos de API externa
+- **UserDeleteModal**: Modal para eliminar usuarios con confirmación y API externa
 
 #### UserViewModal - Detalles de Usuario
 El modal de vista de usuario integra datos en tiempo real desde la API externa:
@@ -141,6 +142,31 @@ El modal de vista de usuario integra datos en tiempo real desde la API externa:
 - **Manejo de Errores**: Gestión robusta de errores con mensajes informativos
 - **Loading States**: Estados de carga durante las peticiones
 - **Formateo**: Utiliza `formatDateOnly()` y `formatDateTime()` para fechas
+
+#### UserDeleteModal - Eliminación de Usuario
+El modal de eliminación de usuario proporciona una interfaz segura para eliminar usuarios con confirmación:
+
+##### Características
+- **Confirmación de Seguridad**: Modal de confirmación con advertencias claras
+- **Información del Usuario**: Muestra datos del usuario a eliminar para confirmación
+- **Estados de Carga**: Indicador visual durante el proceso de eliminación
+- **Manejo de Errores**: Gestión robusta de errores con mensajes informativos
+- **Integración con API**: Utiliza la API externa para realizar la eliminación
+- **Actualización Automática**: Refresca la lista de usuarios después de la eliminación
+
+##### Funcionalidades
+- **Validación de Permisos**: Verifica que el usuario tenga token de autenticación
+- **Confirmación Visual**: Muestra información del usuario antes de eliminar
+- **Advertencias**: Lista clara de las consecuencias de la eliminación
+- **Botones de Acción**: Cancelar y Eliminar con estados diferenciados
+- **Feedback Visual**: Spinner durante la eliminación y mensajes de éxito/error
+
+##### Integración Técnica
+- **API Endpoint**: `DELETE /admin/users/{userId}` para eliminar el usuario
+- **Autenticación**: Incluye token Bearer y API key en las peticiones
+- **Manejo de Errores**: Gestión específica de errores 401, 403, 404, 500
+- **Loading States**: Estados de carga con spinner y texto descriptivo
+- **Callbacks**: Notifica al componente padre para actualizar la lista
 
 ## 🔐 Sistema de Autenticación
 
@@ -167,6 +193,9 @@ El frontend se comunica con una **API externa** para todas las operaciones de au
 - **GET /auth/me**: Obtener perfil del usuario autenticado
 - **POST /admin/users**: Obtener lista de usuarios administradores
 - **GET /admin/user/email/{email}**: Obtener datos específicos de un usuario
+- **PUT /admin/users/{userId}**: Actualizar información de un usuario
+- **PUT /admin/users/{userId}/status**: Actualizar estado de un usuario
+- **DELETE /admin/users/{userId}**: Eliminar un usuario
 
 #### Estructura de APIs de Recuperación de Contraseña
 
@@ -261,6 +290,67 @@ Response:
 {
   "success": true,
   "message": "Email verificado correctamente",
+  "data": null
+}
+```
+
+##### Delete User (Eliminar usuario)
+```bash
+DELETE /prod/api/v1/admin/users/{userId}
+Headers:
+  Content-Type: application/json
+  x-api-key: <api_key>
+  Authorization: Bearer <token> (requerido)
+
+Response:
+{
+  "success": true,
+  "message": "Usuario eliminado correctamente",
+  "data": null
+}
+```
+
+##### Update User (Actualizar usuario)
+```bash
+PUT /prod/api/v1/admin/users/{userId}
+Headers:
+  Content-Type: application/json
+  x-api-key: <api_key>
+  Authorization: Bearer <token> (requerido)
+
+Body:
+{
+  "first_name": "John",
+  "last_name": "Doe",
+  "phone_number": "+573052464748",
+  "plan": "premium"
+}
+
+Response:
+{
+  "success": true,
+  "message": "Usuario actualizado correctamente",
+  "data": null
+}
+```
+
+##### Update User Status (Actualizar estado de usuario)
+```bash
+PUT /prod/api/v1/admin/users/{userId}/status
+Headers:
+  Content-Type: application/json
+  x-api-key: <api_key>
+  Authorization: Bearer <token> (requerido)
+
+Body:
+{
+  "status": "DISABLED"
+}
+
+Response:
+{
+  "success": true,
+  "message": "Estado del usuario actualizado correctamente",
   "data": null
 }
 ```

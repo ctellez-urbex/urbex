@@ -51,7 +51,8 @@ export const API_CONFIG = {
     ADMIN_USERS: '/admin/users',
     ADMIN_USER: '/admin/user/email',
     ADMIN_USER_BY_ID: '/admin/user',
-    ADMIN_USER_STATUS: '/admin/user'
+    ADMIN_USER_STATUS: '/admin/user',
+    ADMIN_USER_DELETE: '/admin/user'
   }
 } as const;
 
@@ -1069,6 +1070,109 @@ export async function updateAdminUserStatus(
     return {
       success: false,
       error: `Error al actualizar estado del usuario: ${errorMessage}`
+    };
+  }
+}
+
+/**
+ * Función para eliminar un usuario específico desde la API externa
+ * 
+ * @param userId - ID del usuario a eliminar
+ * @param token - Token de autenticación del administrador
+ * @returns Promise con la respuesta de eliminación
+ */
+export async function deleteAdminUser(
+  userId: string,
+  token?: string
+): Promise<UpdateUserResponse> {
+  try {
+    console.log('🗑️ Deleting admin user:', {
+      userId,
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      apiKeyConfigured: !!API_CONFIG.API_KEY,
+      apiKeyLength: API_CONFIG.API_KEY?.length || 0,
+      baseUrl: API_CONFIG.BASE_URL,
+      endpoint: `${API_CONFIG.ENDPOINTS.ADMIN_USER_DELETE}/${userId}`,
+      fullUrl: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN_USER_DELETE}/${userId}`
+    });
+    
+    // Verificar que tenemos el API key
+    if (!API_CONFIG.API_KEY) {
+      throw new Error('API key no configurada');
+    }
+    
+    // Verificar que tenemos el token
+    if (!token) {
+      throw new Error('Token de autenticación requerido');
+    }
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+      'Authorization': `Bearer ${token}`
+    };
+    
+    console.log('🔑 Headers:', {
+      'Content-Type': headers['Content-Type'],
+      'x-api-key': headers['x-api-key'] ? '***' : 'MISSING',
+      'Authorization': headers['Authorization'] ? 'Bearer ***' : 'MISSING'
+    });
+    
+    const response = await apiRequest<any>(`${API_CONFIG.ENDPOINTS.ADMIN_USER_DELETE}/${userId}`, {
+      method: 'DELETE',
+      headers
+    });
+    
+    console.log('✅ Delete admin user response:', response);
+    
+    return {
+      success: true,
+      message: response.message || 'Usuario eliminado correctamente'
+    };
+  } catch (error) {
+    console.error('❌ Delete Admin User API Error:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      hasToken: !!token,
+      fullError: error
+    });
+    
+    // Manejar errores específicos del servidor
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    
+    if (errorMessage.includes('404')) {
+      return {
+        success: false,
+        error: 'Usuario no encontrado'
+      };
+    }
+    
+    if (errorMessage.includes('401') || errorMessage.includes('403')) {
+      return {
+        success: false,
+        error: 'No tienes permisos para eliminar este usuario. Verifica tu token de autenticación.'
+      };
+    }
+    
+    if (errorMessage.includes('400')) {
+      return {
+        success: false,
+        error: 'No se puede eliminar este usuario. Verifica que el usuario no tenga datos asociados.'
+      };
+    }
+    
+    if (errorMessage.includes('500')) {
+      return {
+        success: false,
+        error: 'El servidor no está disponible en este momento. Por favor, intenta más tarde.'
+      };
+    }
+    
+    return {
+      success: false,
+      error: `Error al eliminar usuario: ${errorMessage}`
     };
   }
 }

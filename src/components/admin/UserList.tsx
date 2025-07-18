@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Edit, Eye, CheckCircle, XCircle, User } from 'lucide-react'
+import { Edit, Eye, CheckCircle, XCircle, User, Trash } from 'lucide-react'
 import { UserEditModal } from './UserEditModal'
 import { UserViewModal } from './UserViewModal'
+import { UserDeleteModal } from './UserDeleteModal'
 import { AdminUser, AdminPagination } from '@/config/api'
 import { formatDateOnly } from '@/lib/utils'
 
@@ -20,6 +21,7 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   // Calculate pagination for frontend
   const startIndex = (pagination.page - 1) * pagination.limit
@@ -43,6 +45,11 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
     setShowViewModal(true)
   }
 
+  const handleDeleteUser = (user: AdminUser) => {
+    setSelectedUser(user)
+    setShowDeleteModal(true)
+  }
+
   const handleCloseEditModal = () => {
     setShowEditModal(false)
     setSelectedUser(null)
@@ -53,9 +60,19 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
     setSelectedUser(null)
   }
 
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false)
+    setSelectedUser(null)
+  }
+
   const handleUserUpdated = () => {
     onUserUpdate()
     handleCloseEditModal()
+  }
+
+  const handleUserDeleted = () => {
+    onUserUpdate()
+    handleCloseDeleteModal()
   }
 
   
@@ -192,6 +209,14 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user)}
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -249,6 +274,15 @@ export function UserList({ users, loading, pagination, onPageChange, onUserUpdat
         <UserViewModal
           user={selectedUser}
           onClose={handleCloseViewModal}
+        />
+      )}
+
+      {/* Delete Modal */}
+      {showDeleteModal && selectedUser && (
+        <UserDeleteModal
+          user={selectedUser}
+          onClose={handleCloseDeleteModal}
+          onDelete={handleUserDeleted}
         />
       )}
     </>
