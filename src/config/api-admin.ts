@@ -83,12 +83,6 @@ export async function getAdminUsers(
   token?: string
 ): Promise<AdminUsersResponse> {
   try {
-    const headers: Record<string, string> = {};
-    if (token) {      
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    headers['x-api-key'] = API_CONFIG.API_KEY;
-
     const queryParams = new URLSearchParams();
     if (filters.search) queryParams.append('search', filters.search);
     if (filters.status) queryParams.append('status', filters.status);
@@ -98,7 +92,11 @@ export async function getAdminUsers(
     
     const response = await apiRequest<AdminUsersResponse>(url, {
       method: 'GET',
-      headers
+      headers: {
+        'x-api-key': API_CONFIG.API_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
     
     return response;
@@ -123,15 +121,13 @@ export async function getAdminUser(
   token?: string
 ): Promise<AdminUserResponse> {
   try {
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    headers['x-api-key'] = API_CONFIG.API_KEY;
-
     const response = await apiRequest<AdminUserResponse>(`/admin/user/email?email=${encodeURIComponent(email)}`, {
       method: 'GET',
-      headers
+      headers: {
+        'x-api-key': API_CONFIG.API_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
     
     return response;
@@ -156,15 +152,13 @@ export async function getAdminUserById(
   token?: string
 ): Promise<AdminUserResponse> {
   try {
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    headers['x-api-key'] = API_CONFIG.API_KEY;
-
     const response = await apiRequest<AdminUserResponse>(`/admin/user?id=${encodeURIComponent(userId)}`, {
       method: 'GET',
-      headers
+      headers: {
+        'x-api-key': API_CONFIG.API_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
     
     return response;
@@ -191,15 +185,13 @@ export async function updateAdminUser(
   token?: string
 ): Promise<UpdateUserResponse> {
   try {
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    headers['x-api-key'] = API_CONFIG.API_KEY;
-
     const response = await apiRequest<UpdateUserResponse>(`/admin/user?id=${encodeURIComponent(userId)}`, {
       method: 'PUT',
-      headers,
+      headers: {
+        'x-api-key': API_CONFIG.API_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(userData)
     });
     
@@ -227,15 +219,13 @@ export async function updateAdminUserStatus(
   token?: string
 ): Promise<UpdateUserResponse> {
   try {
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    headers['x-api-key'] = API_CONFIG.API_KEY;
-
     const response = await apiRequest<UpdateUserResponse>(`/admin/user?id=${encodeURIComponent(userId)}`, {
       method: 'PATCH',
-      headers,
+      headers: {
+        'x-api-key': API_CONFIG.API_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(statusData)
     });
     
@@ -261,15 +251,13 @@ export async function deleteAdminUser(
   token?: string
 ): Promise<UpdateUserResponse> {
   try {
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    headers['x-api-key'] = API_CONFIG.API_KEY;
-
     const response = await apiRequest<UpdateUserResponse>(`/admin/user?id=${encodeURIComponent(userId)}`, {
       method: 'DELETE',
-      headers
+      headers: {
+        'x-api-key': API_CONFIG.API_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
     
     return response;

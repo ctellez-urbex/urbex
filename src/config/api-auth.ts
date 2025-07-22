@@ -292,6 +292,7 @@ export async function getUserProfile(token: string) {
       headers: {
         'x-api-key': API_CONFIG.API_KEY,
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
     
