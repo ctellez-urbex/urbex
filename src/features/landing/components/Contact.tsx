@@ -5,7 +5,7 @@ import { useState, useCallback, memo, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Phone, MapPin, CheckCircle, AlertCircle } from "lucide-react";
-import { sendContactForm } from "@/config/api";
+import { sendContactForm } from "@/config/api-contact";
 
 interface ContactFormData {
   full_name: string;

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, User, Mail, Phone, Calendar, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
-import { AdminUser, getAdminUserById } from '@/config/api'
+import { AdminUser, getAdminUserById } from '@/config/api-admin'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatDateOnly, formatDateTime } from '@/lib/utils'
 

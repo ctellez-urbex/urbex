@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, Trash, X, User } from 'lucide-react'
-import { AdminUser, deleteAdminUser } from '@/config/api'
+import { AdminUser, deleteAdminUser } from '@/config/api-admin'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface UserDeleteModalProps {

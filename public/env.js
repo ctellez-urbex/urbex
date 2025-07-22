@@ -1,11 +1,11 @@
 // Environment Configuration for Static Frontend
-// Generated for development environment on 2025-07-18T18:32:42.271Z
+// Generated for development environment on 2025-07-22T23:06:52.320Z
 // This file is loaded by the frontend to access environment variables
 // It's generated during build time and served as static content
 
 window.ENV = {
-  "NEXT_PUBLIC_API_BASE_URL": "https://eo6cj32bch.execute-api.us-east-2.amazonaws.com/prod/api/v1",
-  "NEXT_PUBLIC_API_KEY": "09mLQ6KO1k6vadXSBQWVR8JvLMH40oPw2HIRTZyW",
+  "NEXT_PUBLIC_API_BASE_URL": "http://localhost:3001",
+  "NEXT_PUBLIC_API_KEY": "dev_api_key_here",
   "NEXT_PUBLIC_AWS_REGION": "us-east-2",
   "NEXT_PUBLIC_AWS_USER_POOL_ID": "us-east-2_Fpda5LMX0",
   "NEXT_PUBLIC_AWS_POOL_CLIENT_ID": "dev_client_id_here",

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from 'react';
-import { loginUser, healthCheck, sendContactForm } from '@/config/api';
+import { loginUser } from '@/config/api-auth';
+import { healthCheck } from '@/config/api-health';
+import { sendContactForm } from '@/config/api-contact';
 
 export default function TestApiPage() {
   const [loading, setLoading] = useState(false);

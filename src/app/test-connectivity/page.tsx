@@ -18,7 +18,9 @@ import {
   Lock,
   Unlock
 } from 'lucide-react'
-import { API_CONFIG, testApiConnection, getAdminUsers } from '@/config/api'
+import { API_CONFIG } from '@/config/api'
+import { testApiConnection } from '@/config/api-health'
+import { getAdminUsers } from '@/config/api-admin'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface DiagnosticResult {

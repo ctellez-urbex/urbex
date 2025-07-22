@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { forgotPassword, resetPassword } from '@/config/api';
+import { forgotPassword, resetPassword } from '@/config/api-auth';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ForgotPasswordFormData {

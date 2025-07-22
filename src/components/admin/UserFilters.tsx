@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, Filter, X } from 'lucide-react'
-import { AdminUserFilters } from '@/config/api'
+import { AdminUserFilters } from '@/config/api-admin'
 
 interface UserFiltersProps {
   filters: AdminUserFilters

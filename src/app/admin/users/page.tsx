@@ -14,7 +14,7 @@ import {
   AdminUser, 
   AdminUserFilters, 
   AdminPagination 
-} from '@/config/api'
+} from '@/config/api-admin'
 
 export default function UsersAdminPage() {
   return (

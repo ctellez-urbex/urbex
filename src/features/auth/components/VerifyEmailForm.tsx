@@ -2,7 +2,7 @@
 
 import { useState, useCallback, memo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { verifyEmail, resendVerificationCode } from '@/config/api';
+import { verifyEmail, resendVerificationCode } from '@/config/api-auth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

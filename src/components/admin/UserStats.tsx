@@ -1,7 +1,7 @@
 'use client'
 
 import { Users, UserCheck, UserX, Clock, TrendingUp } from 'lucide-react'
-import { AdminUser } from '@/config/api'
+import { AdminUser } from '@/config/api-admin'
 
 interface UserStatsProps {
   users: AdminUser[]

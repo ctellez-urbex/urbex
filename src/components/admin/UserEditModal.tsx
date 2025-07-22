@@ -9,7 +9,7 @@ import {
   updateAdminUserStatus,
   UpdateUserData,
   UpdateUserStatusData
-} from '@/config/api'
+} from '@/config/api-admin'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface UserEditModalProps {

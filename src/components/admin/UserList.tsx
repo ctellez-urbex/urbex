@@ -6,7 +6,7 @@ import { Edit, Eye, CheckCircle, XCircle, User, Trash } from 'lucide-react'
 import { UserEditModal } from './UserEditModal'
 import { UserViewModal } from './UserViewModal'
 import { UserDeleteModal } from './UserDeleteModal'
-import { AdminUser, AdminPagination } from '@/config/api'
+import { AdminUser, AdminPagination } from '@/config/api-admin'
 import { formatDateOnly } from '@/lib/utils'
 
 interface UserListProps {

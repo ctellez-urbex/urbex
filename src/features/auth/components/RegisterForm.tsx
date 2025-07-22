@@ -2,7 +2,7 @@
 
 import { useState, useCallback, memo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { registerUser } from '@/config/api';
+import { registerUser } from '@/config/api-auth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
