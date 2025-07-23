@@ -23,6 +23,21 @@ export interface ContactFormData {
  * @returns Promise with the response
  */
 export async function sendContactForm(formData: ContactFormData) {
+  // Modo desarrollo: simular envío exitoso
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔧 DEV MODE: Simulating contact form submission');
+    
+    // Simular delay de API
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Simular respuesta exitosa
+    return {
+      success: true,
+      message: 'Mensaje enviado exitosamente'
+    };
+  }
+  
+  // Modo producción: usar API real
   return apiRequest('/contact/', {
     method: 'POST',
     body: JSON.stringify({

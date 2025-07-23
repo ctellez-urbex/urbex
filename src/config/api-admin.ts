@@ -91,12 +91,13 @@ export async function getAdminUsers(
     const url = `/admin/users${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     
     const response = await apiRequest<AdminUsersResponse>(url, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'x-api-key': API_CONFIG.API_KEY,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify(filters)
     });
     
     return response;
