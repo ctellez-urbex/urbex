@@ -46,12 +46,30 @@ export interface AdminUsersResponse {
     limit: number;
   };
   error?: string;
+  stack?: string;
+  filters?: AdminUserFilters;
+  hasToken?: boolean;
+  fullError?: any;
 }
 
 export interface AdminUserResponse {
   success: boolean;
   data?: AdminUser;
   error?: string;
+  stack?: string;
+  email?: string;
+  hasToken?: boolean;
+  fullError?: any;
+}
+
+export interface AdminUserByIdResponse {
+  success: boolean;
+  data?: AdminUser;
+  error?: string;
+  stack?: string;
+  userId?: string;
+  hasToken?: boolean;
+  fullError?: any;
 }
 
 export interface UpdateUserData {
@@ -69,6 +87,12 @@ export interface UpdateUserResponse {
   success: boolean;
   message?: string;
   error?: string;
+  stack?: string;
+  hasToken?: boolean;
+  userId?: string;
+  userData?: UpdateUserData;
+  statusData?: UpdateUserStatusData;
+  fullError?: any;
 }
 
 /**
@@ -83,29 +107,43 @@ export async function getAdminUsers(
   token?: string
 ): Promise<AdminUsersResponse> {
   try {
-    const queryParams = new URLSearchParams();
-    if (filters.search) queryParams.append('search', filters.search);
-    if (filters.status) queryParams.append('status', filters.status);
-    if (filters.plan) queryParams.append('plan', filters.plan);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const requestBody: any = {};
+    if (filters.search && filters.search.trim() !== '') {
+      requestBody.filter = filters.search.trim();
+    }
+    if (filters.status && filters.status !== 'all' && filters.status.trim() !== '') {
+      requestBody.status = filters.status.trim();
+    }
+    if (filters.plan && filters.plan !== 'all' && filters.plan.trim() !== '') {
+      requestBody.plan = filters.plan.trim();
+    }
 
-    const url = `/admin/users${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    
-    const response = await apiRequest<AdminUsersResponse>(url, {
+    const url = `/admin/users`;    
+    const response = await apiRequest<any>(url, {
       method: 'POST',
-      headers: {
-        'x-api-key': API_CONFIG.API_KEY,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(filters)
+      headers,
+      body: JSON.stringify(requestBody)
     });
     
-    return response;
+    return {
+      success: true,
+      data: response.data || response
+    };
   } catch (error) {
     console.error('Get Admin Users API Error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error al obtener usuarios'
+      error: error instanceof Error ? error.message : 'Error al obtener usuarios',
+      stack: error instanceof Error ? error.stack : undefined,
+      filters: filters,
+      hasToken: !!token
     };
   }
 }
@@ -122,21 +160,31 @@ export async function getAdminUser(
   token?: string
 ): Promise<AdminUserResponse> {
   try {
-    const response = await apiRequest<AdminUserResponse>(`/admin/user/email?email=${encodeURIComponent(email)}`, {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await apiRequest<any>(`/admin/user/email/${encodeURIComponent(email)}`, {
       method: 'GET',
-      headers: {
-        'x-api-key': API_CONFIG.API_KEY,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+      headers,
     });
     
-    return response;
+    return {
+      success: true,
+      data: response.data || response      
+    };
   } catch (error) {
     console.error('Get Admin User API Error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error al obtener usuario'
+      error: error instanceof Error ? error.message : 'Error al obtener usuario',
+      stack: error instanceof Error ? error.stack : undefined,
+      hasToken: !!token,
+      email: email,
+      fullError: error
     };
   }
 }
@@ -151,23 +199,33 @@ export async function getAdminUser(
 export async function getAdminUserById(
   userId: string, 
   token?: string
-): Promise<AdminUserResponse> {
+): Promise<AdminUserByIdResponse> {
   try {
-    const response = await apiRequest<AdminUserResponse>(`/admin/user?id=${encodeURIComponent(userId)}`, {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await apiRequest<any>(`/admin/user/${encodeURIComponent(userId)}`, {
       method: 'GET',
-      headers: {
-        'x-api-key': API_CONFIG.API_KEY,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+      headers,
     });
     
-    return response;
+    return {
+      success: true,
+      data: response.data || response
+    };
   } catch (error) {
     console.error('Get Admin User by ID API Error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error al obtener usuario'
+      error: error instanceof Error ? error.message : 'Error al obtener usuario',
+      stack: error instanceof Error ? error.stack : undefined,
+      hasToken: !!token,
+      userId: userId,
+      fullError: error
     };
   }
 }
@@ -186,22 +244,33 @@ export async function updateAdminUser(
   token?: string
 ): Promise<UpdateUserResponse> {
   try {
-    const response = await apiRequest<UpdateUserResponse>(`/admin/user?id=${encodeURIComponent(userId)}`, {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await apiRequest<any>(`/admin/user/${encodeURIComponent(userId)}`, {
       method: 'PUT',
-      headers: {
-        'x-api-key': API_CONFIG.API_KEY,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify(userData)
     });
     
-    return response;
+    return {
+      success: true,
+      message: response.message  || 'Usuario actualizado correctamente'
+    };
   } catch (error) {
     console.error('Update Admin User API Error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error al actualizar usuario'
+      error: error instanceof Error ? error.message : 'Error al actualizar usuario',
+      stack: error instanceof Error ? error.stack : undefined,
+      userData: userData,
+      userId: userId,      
+      hasToken: !!token,
+      fullError: error
     };
   }
 }
@@ -220,22 +289,33 @@ export async function updateAdminUserStatus(
   token?: string
 ): Promise<UpdateUserResponse> {
   try {
-    const response = await apiRequest<UpdateUserResponse>(`/admin/user?id=${encodeURIComponent(userId)}`, {
-      method: 'PATCH',
-      headers: {
-        'x-api-key': API_CONFIG.API_KEY,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await apiRequest<any>(`/admin/user/${encodeURIComponent(userId)}/status`, {
+      method: 'PUT',
+      headers,
       body: JSON.stringify(statusData)
     });
     
-    return response;
+    return {
+      success: true,
+      message: response.message  || 'Estado del usuario actualizado correctamente'
+    };
   } catch (error) {
     console.error('Update Admin User Status API Error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error al actualizar estado del usuario'
+      error: error instanceof Error ? error.message : 'Error al actualizar estado del usuario',
+      stack: error instanceof Error ? error.stack : undefined,
+      userId: userId,
+      statusData: statusData,
+      hasToken: !!token,
+      fullError: error
     };
   }
 }
@@ -252,13 +332,16 @@ export async function deleteAdminUser(
   token?: string
 ): Promise<UpdateUserResponse> {
   try {
-    const response = await apiRequest<UpdateUserResponse>(`/admin/user?id=${encodeURIComponent(userId)}`, {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await apiRequest<any>(`/admin/user/${encodeURIComponent(userId)}`, {
       method: 'DELETE',
-      headers: {
-        'x-api-key': API_CONFIG.API_KEY,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+      headers,
     });
     
     return response;
@@ -266,7 +349,11 @@ export async function deleteAdminUser(
     console.error('Delete Admin User API Error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error al eliminar usuario'
+      error: error instanceof Error ? error.message : 'Error al eliminar usuario',
+      stack: error instanceof Error ? error.stack : undefined,
+      hasToken: !!token,
+      userId: userId,
+      fullError: error
     };
   }
 } 

@@ -72,49 +72,13 @@ export interface ResetPasswordData {
  */
 export async function loginUser(credentials: LoginCredentials): Promise<LoginResponse> {
   try {
-    // Modo desarrollo: simular login exitoso
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔧 DEV MODE: Simulating login for:', credentials.email);
-      
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Validación básica
-      if (!credentials.email || !credentials.password) {
-        return {
-          success: false,
-          error: 'Email y contraseña son requeridos'
-        };
-      }
-      
-      if (credentials.password.length < 6) {
-        return {
-          success: false,
-          error: 'La contraseña debe tener al menos 6 caracteres'
-        };
-      }
-      
-      // Simular respuesta exitosa
-      return {
-        success: true,
-        data: {
-          user: {
-            email: credentials.email,
-            first_name: credentials.email.split('@')[0],
-            last_name: 'Usuario',
-            phone_number: '+57-300-000-0000',
-            su: 'user',
-            plan: 'basic',
-            name: credentials.email.split('@')[0]
-          },
-          token: 'dev_token_' + Date.now()
-        }
-      };
-    }
-    
-    // Modo producción: usar API real
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
     const response = await apiRequest<LoginResponse>('/auth/login', {
       method: 'POST',
+      headers,
       body: JSON.stringify({
         username: credentials.email.trim(),
         password: credentials.password
@@ -139,8 +103,13 @@ export async function loginUser(credentials: LoginCredentials): Promise<LoginRes
  */
 export async function registerUser(userData: RegisterData) {
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
     const response = await apiRequest('/auth/register', {
       method: 'POST',
+      headers,
       body: JSON.stringify({
         email: userData.email.trim(),
         password: userData.password,
@@ -170,8 +139,13 @@ export async function registerUser(userData: RegisterData) {
  */
 export async function verifyEmail(verifyData: VerifyEmailData) {
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
     const response = await apiRequest('/auth/confirm', {
       method: 'POST',
+      headers,
       body: JSON.stringify({
         username: verifyData.username.trim(),
         confirmation_code: verifyData.confirmation_code.trim()
@@ -196,8 +170,13 @@ export async function verifyEmail(verifyData: VerifyEmailData) {
  */
 export async function resendVerificationCode(resendData: ResendCodeData) {
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
     const response = await apiRequest('/auth/register', {
       method: 'POST',
+      headers,
       body: JSON.stringify({
         email: resendData.email.trim()
       })
@@ -222,7 +201,10 @@ export async function resendVerificationCode(resendData: ResendCodeData) {
  */
 export async function forgotPassword(forgotData: ForgotPasswordData, token?: string) {
   try {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -254,7 +236,10 @@ export async function forgotPassword(forgotData: ForgotPasswordData, token?: str
  */
 export async function resetPassword(resetData: ResetPasswordData, token?: string) {
   try {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -287,13 +272,16 @@ export async function resetPassword(resetData: ResetPasswordData, token?: string
  */
 export async function getUserProfile(token: string) {
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_CONFIG.API_KEY,
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
     const response = await apiRequest('/auth/me', {
       method: 'GET',
-      headers: {
-        'x-api-key': API_CONFIG.API_KEY,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+      headers
     });
     
     return response;
