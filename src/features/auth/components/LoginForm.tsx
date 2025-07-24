@@ -1,112 +1,185 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { authService } from '@/lib/aws/cognito';
-import { sessionService } from '@/lib/auth/session';
+import { useState, useCallback, memo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { SimpleButton } from '@/components/ui/simple-button';
+import Link from 'next/link';
 
+interface LoginFormData {
+  email: string;
+  password: string;
+}
 
-export const LoginForm = () => {
-  const router = useRouter();
-  const [formData, setFormData] = useState({
+const LoginForm = memo(() => {
+  const { signIn } = useAuth();
+  const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isAccountDisabled, setIsAccountDisabled] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleInputChange = useCallback((field: keyof LoginFormData) => 
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData(prev => ({ ...prev, [field]: e.target.value }));
+      if (error) {
+        setError(''); // Clear error when user starts typing
+        setIsAccountDisabled(false); // Also clear disabled state
+      }
+    }, [error]);
+
+
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🟡 Form submit triggered, loading:', loading)
+    
+    // Prevent multiple submissions
+    if (loading) {
+      console.log('🟡 Already loading, ignoring submit')
+      return;
+    }
+    
     setError('');
+    setIsAccountDisabled(false);
     setLoading(true);
 
     try {
-      const result = await authService.signIn({
-        email: formData.email,
-        password: formData.password
-      });
-
-      if (result.success && result.token) {
-        sessionService.setToken(result.token);
-        router.push('/dashboard');
-      } else {
-        setError(result.error || 'Error al iniciar sesión');
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      if (err instanceof Error) {
-        if (err.message.includes('User is not confirmed')) {
-          setError('Por favor, verifica tu correo electrónico antes de iniciar sesión');
-        } else if (err.message.includes('Incorrect username or password')) {
-          setError('Correo electrónico o contraseña incorrectos');
-        } else {
-          setError('Error al iniciar sesión. Por favor, intenta de nuevo');
+      console.log('🟡 Calling signIn...')
+      const result = await signIn(formData.email.trim(), formData.password);
+      console.log('🟡 SignIn result:', result)
+      
+      if (!result.success) {
+        const errorMessage = result.error || 'Error al iniciar sesión';
+        console.log('🟠 [LoginForm] Error recibido del backend:', errorMessage);
+        setError(errorMessage);
+        
+        // Check if account is disabled
+        if (errorMessage.includes('deshabilitada')) {
+          setIsAccountDisabled(true);
         }
-      } else {
-        setError('Error al iniciar sesión. Por favor, intenta de nuevo');
+        
+        setLoading(false); // Only set loading false if there's an error
       }
-    } finally {
+      // Don't set loading false here if success - let redirect happen
+    } catch (err) {
+      console.error('🔴 Login form error:', err);
+      setError('Error al iniciar sesión. Por favor, intenta de nuevo');
       setLoading(false);
     }
-  };
+  }, [formData, signIn, loading]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+      {error && (
+        <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          {isAccountDisabled && (
+            <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
+              <p className="text-xs text-blue-600 dark:text-blue-400">
+                💡 <strong>¿Necesitas ayuda?</strong> Contacta al administrador en{' '}
+                <a 
+                  href="mailto:alejandro@urbex.com.co" 
+                  className="underline hover:text-blue-800 dark:hover:text-blue-200"
+                >
+                  alejandro@urbex.com.co
+                </a>
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+      
       <div className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label 
+            htmlFor="email" 
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Correo electrónico
           </label>
-          <div className="mt-1">
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              placeholder="tu@email.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              error={error}
-            />
-          </div>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            placeholder="tu@email.com"
+            value={formData.email}
+            onChange={handleInputChange('email')}
+            disabled={loading}
+            className="w-full"
+          />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label 
+            htmlFor="password" 
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Contraseña
           </label>
-          <div className="mt-1">
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            />
-          </div>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            placeholder="••••••••"
+            value={formData.password}
+            onChange={handleInputChange('password')}
+            disabled={loading}
+            className="w-full"
+          />
         </div>
       </div>
 
-      <div>
-        <button
-          type="submit"
+      <Button
+        type="submit"
+        variant="primary-blue"
+        disabled={loading || !formData.email || !formData.password}
+        className="w-full"
+        loading={loading}
+      >
+        Iniciar sesión
+      </Button>
+
+      <div className="flex gap-3">
+        <Button
+          type="button"
+          variant="primary-blue"
+          onClick={() => window.location.href = '/'}
+          className="flex-1"
           disabled={loading}
-          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
         >
-          {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-        </button>
+          Volver
+        </Button>
       </div>
 
-      <div className="text-sm text-center">
-        <a href="/auth/forgot-password" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+      <div className="text-sm text-center space-y-2">
+        <Link 
+          href="/auth/forgot-password/index.html" 
+          className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+        >
           ¿Olvidaste tu contraseña?
-        </a>
+        </Link>
+        <div>
+          <span className="text-gray-600 dark:text-gray-400">¿No tienes una cuenta? </span>
+          <Link 
+            href="/auth/register/index.html" 
+            className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+          >
+            Regístrate
+          </Link>
+        </div>
       </div>
     </form>
   );
-}; 
+});
+
+LoginForm.displayName = 'LoginForm';
+
+export { LoginForm }; 

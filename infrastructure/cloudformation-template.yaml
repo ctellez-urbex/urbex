@@ -27,7 +27,7 @@ Resources:
       BucketName: !Sub '${DomainName}-${Environment}'
       WebsiteConfiguration:
         IndexDocument: index.html
-        ErrorDocument: error.html
+        ErrorDocument: index.html
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
@@ -100,6 +100,58 @@ Resources:
           DefaultTTL: 86400
           MaxTTL: 31536000
           MinTTL: 0
+        CacheBehaviors:
+          - PathPattern: '_next/static/*'
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachedMethods:
+              - GET
+              - HEAD
+            Compress: true
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+            DefaultTTL: 31536000
+            MaxTTL: 31536000
+            MinTTL: 31536000
+          - PathPattern: '*.js'
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachedMethods:
+              - GET
+              - HEAD
+            Compress: true
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+            DefaultTTL: 31536000
+            MaxTTL: 31536000
+            MinTTL: 31536000
+          - PathPattern: '*.css'
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachedMethods:
+              - GET
+              - HEAD
+            Compress: true
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+            DefaultTTL: 31536000
+            MaxTTL: 31536000
+            MinTTL: 31536000
         CustomErrorResponses:
           - ErrorCode: 404
             ResponseCode: 200

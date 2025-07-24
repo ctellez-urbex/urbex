@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
 
 // Definición de enlaces de navegación
 const navLinks = [
-  { href: "#explorar", label: "Explorar" },
+  { href: "#hero", label: "Explorar" },
   { href: "#services", label: "Servicios" },
   { href: "#about", label: "Ideal" },
   { href: "#clients", label: "Clientes" },
@@ -18,11 +19,13 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const { theme } = useTheme();
+  const { theme, resolvedTheme } = useTheme();
+  const { user, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("");
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   // After mounting, we have access to the theme
   useEffect(() => setMounted(true), []);
@@ -96,10 +99,6 @@ export default function Header() {
     }
   };
 
-  if (!mounted) {
-    return null;
-  }
-
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -112,13 +111,23 @@ export default function Header() {
         {/* Logo con animación al hover */}
         <Link href="/" className="flex items-center group">
           <div className="relative w-auto mr-2 transition-transform group-hover:scale-105 duration-300">
-            <Image 
-              src={theme === "dark" ? "/images/urbex-white.svg" : "/images/urbex-logo.svg"} 
-              alt="Urbex Logo" 
-              width={100}
-              height={22}
-              className="w-auto h-8" 
-            />
+            {mounted ? (
+              <Image 
+                src={(theme === "dark" || resolvedTheme === "dark") ? "/images/urbex-white.svg" : "/images/urbex-logo.svg"} 
+                alt="Urbex Logo" 
+                width={100}
+                height={22}
+                className="w-auto h-8" 
+              />
+            ) : (
+              <Image 
+                src="/images/urbex-logo.svg" 
+                alt="Urbex Logo" 
+                width={100}
+                height={22}
+                className="w-auto h-8" 
+              />
+            )}
           </div>
         </Link>
 
@@ -145,7 +154,7 @@ export default function Header() {
           <div className="h-5 w-px bg-neutral-300 dark:bg-neutral-700 mx-1"></div>
           
           <Link
-            href="/auth/login"
+            href="/auth/login/index.html"
             className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-md text-sm shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
           >
             Iniciar Sesión
@@ -206,7 +215,7 @@ export default function Header() {
           <div className="h-px w-full bg-neutral-200 dark:bg-neutral-800 my-2"></div>
           
           <Link
-            href="/auth/login"
+            href="/auth/login/index.html"
             className="bg-blue-500 hover:bg-blue-600 text-white py-3 mt-2 text-center font-medium rounded-md shadow-sm"
             onClick={() => setIsMenuOpen(false)}
           >

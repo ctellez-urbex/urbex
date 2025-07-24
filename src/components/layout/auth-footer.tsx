@@ -19,14 +19,16 @@ export function AuthFooter() {
   }
 
   return (
-    <footer className={`border-t ${
-      theme === 'dark' ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'
+    <footer className={`border-t py-4 ${
+      theme === 'dark' ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
     }`}>
-          <p className={`text-sm text-center ${
-            theme === 'dark' ? 'text-neutral-400' : 'text-neutral-600'
-          }`}>
-            © {currentYear} Urbex. Todos los derechos reservados.
-          </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <p className={`text-sm text-center ${
+          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+        }`}>
+          © {currentYear} Urbex. Todos los derechos reservados.
+        </p>
+      </div>
     </footer>
   );
 } 

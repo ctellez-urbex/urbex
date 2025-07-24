@@ -1,148 +1,392 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useState } from "react";
-import formData from "form-data";
-import Mailgun from "mailgun.js";
-import { Mail } from "lucide-react";
+import { useState, useCallback, memo, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Mail, Phone, MapPin, CheckCircle, AlertCircle } from "lucide-react";
+import { sendContactForm } from "@/config/api-contact";
 
-export default function Contact() {
-  const { theme } = useTheme();
-  const [formData, setFormData] = useState({
-    name: "",
+interface ContactFormData {
+  full_name: string;
+  email: string;
+  phone: string;
+  message: string;
+}
+
+interface ContactInfo {
+  icon: typeof Mail;
+  title: string;
+  value: string;
+  href: string;
+}
+
+const contactInfo: ContactInfo[] = [
+  {
+    icon: Mail,
+    title: "Correo electrónico",
+    value: "alejandro@urbex.com.co",
+    href: "mailto:alejandro@urbex.com.co"
+  },
+  {
+    icon: Phone,
+    title: "Teléfono",
+    value: "+57 310 8780 049",
+    href: "tel:+573108780049"
+  },
+  {
+    icon: MapPin,
+    title: "Dirección",
+    value: "Ciudad de Bogotá, Colombia",
+    href: "https://maps.google.com"
+  }
+];
+
+const Contact = memo(() => {
+  const { theme, resolvedTheme } = useTheme();
+  const [formData, setFormData] = useState<ContactFormData>({
+    full_name: "",
     email: "",
     phone: "",
     message: ""
   });
+  const [errors, setErrors] = useState<Partial<ContactFormData>>({});
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [submitMessage, setSubmitMessage] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const isDark = useMemo(() => 
+    theme === 'dark' || resolvedTheme === 'dark', 
+    [theme, resolvedTheme]
+  );
+
+  const validateForm = useCallback((): boolean => {
+    const newErrors: Partial<ContactFormData> = {};
+
+    if (!formData.full_name.trim()) {
+      newErrors.full_name = "Name is required";
+    } else if (formData.full_name.trim().length < 2) {
+      newErrors.full_name = "Name must be at least 2 characters";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    if (formData.phone && !/^[\d\s\-\+\(\)]{10,}$/.test(formData.phone.replace(/\s/g, ''))) {
+      newErrors.phone = "Please enter a valid phone number";
+    }
+
+    if (!formData.message.trim()) {
+      newErrors.message = "Message is required";
+    } else if (formData.message.trim().length < 10) {
+      newErrors.message = "Message must be at least 10 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [formData]);
+
+  const handleInputChange = useCallback((field: keyof ContactFormData) => 
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = field === 'email' ? e.target.value.toLowerCase().trim() : e.target.value;
+      setFormData(prev => ({ ...prev, [field]: value }));
+      
+      // Clear field-specific error when user starts typing
+      if (errors[field]) {
+        setErrors(prev => ({ ...prev, [field]: undefined }));
+      }
+    }, [errors]);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setStatus("sending");
-    setErrorMessage("");
+    setSubmitMessage("");
+    setErrors({});
 
     try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Error al enviar el mensaje");
-      }
+      const data = await sendContactForm(formData);
 
       setStatus("success");
-      setFormData({ name: "", email: "", phone: "", message: "" });
+      setSubmitMessage("Gracias! Tu mensaje ha sido enviado exitosamente. Nos pondremos en contacto contigo pronto.");
+      setFormData({ full_name: "", email: "", phone: "", message: "" });
     } catch (error) {
       setStatus("error");
-      setErrorMessage(error instanceof Error ? error.message : "Error al enviar el mensaje");
+      const errorMessage = error instanceof Error ? error.message : "Error al enviar el mensaje. Por favor, inténtalo de nuevo.";
+      setSubmitMessage(errorMessage);
+      setErrors({ message: errorMessage });
     }
-  };
+  }, [formData, validateForm]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     setStatus("idle");
-    setErrorMessage("");
-  };
+    setSubmitMessage("");
+    setErrors({});
+  }, []);
+
+  const isFormValid = useMemo(() => 
+    formData.full_name.trim() && 
+    formData.email.trim() && 
+    formData.message.trim() && 
+    Object.keys(errors).length === 0,
+    [formData, errors]
+  );
+
+  const contactInfoItems = useMemo(() => 
+    contactInfo.map((info, index) => {
+      const IconComponent = info.icon;
+      return (
+        <a
+          key={index}
+          href={info.href}
+          className={`flex items-center space-x-4 p-4 rounded-lg transition-colors duration-200 ${
+            isDark 
+              ? 'hover:bg-gray-700' 
+              : 'hover:bg-gray-50'
+          }`}
+          target={info.href.startsWith('http') ? '_blank' : undefined}
+          rel={info.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+        >
+          <div className={`p-3 rounded-full ${
+            isDark ? 'bg-blue-900/30' : 'bg-blue-100'
+          }`}>
+            <IconComponent className={`w-6 h-6 ${
+              isDark ? 'text-blue-400' : 'text-blue-600'
+            }`} />
+          </div>
+          <div>
+            <h4 className={`font-medium ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
+              {info.title}
+            </h4>
+            <p className={`text-sm ${
+              isDark ? 'text-gray-300' : 'text-gray-600'
+            }`}>
+              {info.value}
+            </p>
+          </div>
+        </a>
+      );
+    }), 
+    [isDark]
+  );
 
   return (
-    <section id="contact" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <h2 className={`text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-12 sm:mb-16 ${
-          theme === 'dark' ? 'text-white' : 'text-neutral-800'
-        }`}>
-          Contáctanos
-        </h2>
+    <section 
+      id="contact" 
+      className="py-20 px-4 sm:px-6 lg:px-8"
+      aria-labelledby="contact-heading"
+    >
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 
+            id="contact-heading"
+            className={`text-3xl md:text-4xl font-bold mb-4 ${
+              isDark ? 'text-white' : 'text-neutral-800'
+            }`}
+          >
+            Contactanos
+          </h2>
+          <p className={`max-w-2xl mx-auto text-lg ${
+            isDark ? 'text-neutral-300' : 'text-neutral-600'
+          }`}>
+            Listo para revolucionar tus operaciones inmobiliarias? Contactanos hoy y descubre cómo Urbex puede ayudarte a tomar decisiones basadas en datos.
+          </p>
+        </div>
 
-        <div className={`rounded-2xl p-6 sm:p-8 ${
-          theme === 'dark' ? 'bg-neutral-800' : 'bg-white'
-        } shadow-lg`}>
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <label htmlFor="name" className={`block text-sm sm:text-base font-medium mb-2 ${
-                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                }`}>
-                  Nombre
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  required
-                  className={`w-full px-4 py-2 rounded-lg border ${
-                    theme === 'dark'
-                      ? 'bg-neutral-700 border-neutral-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className={`block text-sm sm:text-base font-medium mb-2 ${
-                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                }`}>
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  required
-                  className={`w-full px-4 py-2 rounded-lg border ${
-                    theme === 'dark'
-                      ? 'bg-neutral-700 border-neutral-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
-                />
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Contact Information */}
+          <div className={`lg:col-span-1 p-8 rounded-2xl ${
+            isDark ? 'bg-gray-800' : 'bg-gray-50'
+          }`}>
+            <h3 className={`text-xl font-semibold mb-6 ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
+              Información de contacto
+            </h3>
+            <div className="space-y-4">
+              {contactInfoItems}
             </div>
-
-            <div>
-              <label htmlFor="message" className={`block text-sm sm:text-base font-medium mb-2 ${
-                theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+            
+            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <p className={`text-sm ${
+                isDark ? 'text-gray-300' : 'text-gray-600'
               }`}>
-                Mensaje
-              </label>
-              <textarea
-                id="message"
-                name="message"
-                required
-                rows={4}
-                className={`w-full px-4 py-2 rounded-lg border ${
-                  theme === 'dark'
-                    ? 'bg-neutral-700 border-neutral-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
-                } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
-              ></textarea>
+                Normalmente respondemos dentro de 24 horas durante los días hábiles.
+              </p>
             </div>
+          </div>
 
-            <button
-              type="submit"
-              disabled={status === "sending"}
-              className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-300 ${
-                theme === 'dark'
-                  ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                  : 'bg-purple-600 hover:bg-purple-700 text-white'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {status === "sending" ? 'Enviando...' : 'Enviar Mensaje'}
-            </button>
-          </form>
+          {/* Contact Form */}
+          <div className={`lg:col-span-2 p-8 rounded-2xl shadow-lg ${
+            isDark ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <h3 className={`text-xl font-semibold mb-6 ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
+              Envíanos un mensaje
+            </h3>
+
+            {/* Status Messages */}
+            {status === "success" && (
+              <div className="mb-6 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                <div className="flex items-center">
+                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mr-2" />
+                  <p className="text-sm text-green-600 dark:text-green-400">
+                    {submitMessage}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {status === "error" && (
+              <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mr-2" />
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                      {submitMessage}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleRetry}
+                    className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <label 
+                    htmlFor="full_name" 
+                    className={`block text-sm font-medium mb-2 ${
+                      isDark ? 'text-gray-200' : 'text-gray-700'
+                    }`}
+                  >
+                    Nombre completo *
+                  </label>
+                  <Input
+                    id="full_name"
+                    name="full_name"
+                    type="text"
+                    required
+                    placeholder="Nombre completo"
+                    value={formData.full_name}
+                    onChange={handleInputChange('full_name')}
+                    disabled={status === "sending"}
+                    error={errors.full_name}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label 
+                    htmlFor="email" 
+                    className={`block text-sm font-medium mb-2 ${
+                      isDark ? 'text-gray-200' : 'text-gray-700'
+                    }`}
+                  >
+                    Correo electrónico *
+                  </label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="tu@urbex.com.co"
+                    value={formData.email}
+                    onChange={handleInputChange('email')}
+                    disabled={status === "sending"}
+                    error={errors.email}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="phone" 
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-gray-200' : 'text-gray-700'
+                  }`}
+                >
+                  Teléfono (opcional)
+                </label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="+57 (317) 823-4567"
+                  value={formData.phone}
+                  onChange={handleInputChange('phone')}
+                  disabled={status === "sending"}
+                  error={errors.phone}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="message" 
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-gray-200' : 'text-gray-700'
+                  }`}
+                >
+                  Mensaje *
+                </label>
+                <textarea
+                  id="message"
+                  name="message"
+                  required
+                  rows={4}
+                  placeholder="Cuéntanos sobre tu proyecto o cómo podemos ayudarte..."
+                  value={formData.message}
+                  onChange={handleInputChange('message')}
+                  disabled={status === "sending"}
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                  } focus:ring-2 focus:ring-blue-500/20 focus:outline-none resize-vertical ${
+                    errors.message ? 'border-red-500' : ''
+                  }`}
+                />
+                {errors.message && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {errors.message}
+                  </p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                variant="primary-blue"
+                disabled={status === "sending" || !isFormValid}
+                loading={status === "sending"}
+                className="w-full"
+                size="lg"
+              >
+                {status === "sending" ? 'Enviando mensaje...' : 'Enviar mensaje'}
+              </Button>
+            </form>
+          </div>
         </div>
       </div>
     </section>
   );
-} 
+});
+
+Contact.displayName = 'Contact';
+
+export default Contact; 
