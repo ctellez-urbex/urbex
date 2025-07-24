@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function Footer() {
-  const { theme } = useTheme();
+  const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const currentYear = new Date().getFullYear();
 
@@ -26,13 +26,23 @@ export default function Footer() {
           {/* Logo and Description */}
           <div className="col-span-1 md:col-span-2">
             <Link href="/" className="inline-block mb-4">
-              <Image
-                src={theme === 'dark' ? "/images/urbex-white.svg" : "/images/urbex-logo.svg"}
-                alt="Urbex Logo"
-                width={120}
-                height={30}
-                className="h-8 w-auto"
-              />
+              {mounted ? (
+                <Image
+                  src={(theme === 'dark' || resolvedTheme === 'dark') ? "/images/urbex-white.svg" : "/images/urbex-logo.svg"}
+                  alt="Urbex Logo"
+                  width={120}
+                  height={30}
+                  className="h-8 w-auto"
+                />
+              ) : (
+                <Image
+                  src="/images/urbex-logo.svg"
+                  alt="Urbex Logo"
+                  width={120}
+                  height={30}
+                  className="h-8 w-auto"
+                />
+              )}
             </Link>
             <p className={`mt-4 text-sm ${
               theme === 'dark' ? 'text-neutral-400' : 'text-neutral-600'

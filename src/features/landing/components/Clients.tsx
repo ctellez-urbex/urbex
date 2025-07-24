@@ -87,8 +87,15 @@ export default function Clients() {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [currentPosition, setCurrentPosition] = useState(0);
   const [hoveredLogo, setHoveredLogo] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     const carousel = carouselRef.current;
     if (!carousel) return;
 
@@ -111,13 +118,13 @@ export default function Clients() {
     return () => {
       cancelAnimationFrame(animation);
     };
-  }, [currentPosition]);
+  }, [currentPosition, mounted]);
 
   return (
     <section id="clients" className="py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <h2 className={`text-3xl md:text-4xl font-bold mb-16 text-center ${
-          theme === 'dark' ? 'text-white' : 'text-neutral-800'
+          mounted && theme === 'dark' ? 'text-white' : 'text-neutral-800'
         }`}>
           Empresas que confían en Urbex
         </h2>
@@ -145,7 +152,7 @@ export default function Clients() {
                   alt={client.name}
                   fill
                   className={`object-contain transition-all duration-300 ${
-                    theme === 'dark' 
+                    mounted && theme === 'dark' 
                       ? 'brightness-10 invert opacity-60' 
                       : hoveredLogo === `first-${client.id}`
                         ? 'brightness-80' 
@@ -172,7 +179,7 @@ export default function Clients() {
                   alt={client.name}
                   fill
                   className={`object-contain transition-all duration-300 ${
-                    theme === 'dark' 
+                    mounted && theme === 'dark' 
                       ? 'brightness-10 invert opacity-60' 
                       : hoveredLogo === `second-${client.id}`
                         ? 'brightness-80' 
