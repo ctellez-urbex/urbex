@@ -18,7 +18,7 @@ export default function RouteHandler({
   const isAuthRoute = pathname.startsWith('/auth');
   
   // Dashboard routes get the client layout with sidebar
-  const isDashboardRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin');
+  const isDashboardRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/properties');
 
   // Landing page gets the landing layout
   if (isLandingPage) {

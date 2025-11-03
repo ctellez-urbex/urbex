@@ -61,6 +61,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('🔍 Checking existing session...');
       
+      // Check if we're in development mode and skip API calls
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      if (isDevelopment) {
+        console.log('🚧 Development mode - skipping automatic session check');
+        setLoading(false);
+        return;
+      }
+      
       // Check if we have a stored token
       const storedUser = getUserFromStorage();
       if (storedUser && storedUser.token) {

@@ -18,6 +18,14 @@ const navLinks = [
   { href: "#contact", label: "Contacto" },
 ];
 
+// Enlaces adicionales para usuarios autenticados
+const authNavLinks = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/properties", label: "Propiedades" },
+  { href: "/menu-demo", label: "Demo Menú" },
+  { href: "/detail_property?token=dGVzdF9wcm9wZXJ0eV8xMjM=", label: "Detalle Propiedad" },
+];
+
 export default function Header() {
   const { theme, resolvedTheme } = useTheme();
   const { user, signOut } = useAuth();

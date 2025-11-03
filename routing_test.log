@@ -1,0 +1,14 @@
+🚀 SPA Test Server running on http://localhost:3001
+📁 Serving files from: /Users/ctellez/developer/front/urbex/out
+
+🧪 Test these URLs:
+   http://localhost:3001/
+   http://localhost:3001/dashboard
+   http://localhost:3001/auth/login
+   http://localhost:3001/properties
+   http://localhost:3001/admin/users
+
+✨ This simulates S3 + CloudFront with proper SPA routing
+Press Ctrl+C to stop
+2025-10-01T02:01:53.626Z - HEAD /dashboard
+📁 Serving directory index: /Users/ctellez/developer/front/urbex/out/dashboard/index.html

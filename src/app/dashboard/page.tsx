@@ -33,7 +33,6 @@ function DashboardContent() {
     }
   }
 
-  
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8">
@@ -112,24 +111,45 @@ function DashboardContent() {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {user?.su && parseInt(user?.su) > 1 && (
-          <Link href="/admin/users/index.html" className="block">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <Users className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+            <>
+              <Link href="/admin/users" className="block">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                      <Users className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Administración
+                    </h3>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    Gestiona usuarios registrados
+                  </p>
+                  <Button className="w-full">
+                    Gestionar Usuarios
+                  </Button>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Administración
-                </h3>
-              </div>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Gestiona usuarios registrados
-              </p>
-              <Button className="w-full">
-                Gestionar Usuarios
-              </Button>
-            </div>
-          </Link>
+              </Link>
+              
+              <Link href="/properties" className="block">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                      <Building className="w-6 h-6 text-green-600 dark:text-green-300" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Búsqueda de Propiedades
+                    </h3>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    Busca propiedades inmobiliarias
+                  </p>
+                  <Button className="w-full">
+                    Buscar Propiedades
+                  </Button>
+                </div>
+              </Link>
+            </>
           )}
           {/*<div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <div className="flex items-center gap-3 mb-3">

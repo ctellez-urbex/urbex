@@ -33,9 +33,17 @@ function isApiConfigured(): boolean {
 export const API_CONFIG = {
   // Base URL for external API
   BASE_URL: getStaticEnvVar('NEXT_PUBLIC_API_BASE_URL', ''),
-  
-  // API Key for authentication
   API_KEY: getStaticEnvVar('NEXT_PUBLIC_API_KEY', ''),
+  
+  // Properties API Base URL
+  PROPERTIES_BASE_URL: getStaticEnvVar('NEXT_PUBLIC_PROPERTIES_API_BASE_URL', ''),
+  PROPERTIES_API_KEY: getStaticEnvVar('NEXT_PUBLIC_PROPERTIES_API_KEY', ''),
+
+  PROPERTIES_DETAIL_BASE_URL: getStaticEnvVar('NEXT_PUBLIC_PROPERTIES_DETAIL_BASE_URL', ''),
+  
+  // Local Properties API Base URL
+  NEXT_PUBLIC_PROPERTIES_API_BASE_URL_LOCAL: getStaticEnvVar('NEXT_PUBLIC_PROPERTIES_API_BASE_URL_LOCAL', 'http://127.0.0.1:8000'),
+  
 } as const;
 
 /**
@@ -89,12 +97,21 @@ export async function apiRequest<T = any>(
       headers: Object.fromEntries(response.headers.entries())
     });
     
+    // First, get the response text
+    const responseText = await response.text();
+    
     let data;
     try {
-      data = await response.json();
+      data = JSON.parse(responseText);
     } catch (jsonError) {
       console.error('❌ JSON Parse Error:', jsonError);
-      throw new Error('Invalid server response');
+      console.error('❌ Response was not JSON. Received:', responseText.substring(0, 500) + '...');
+      
+      if (responseText.includes('<!DOCTYPE')) {
+        throw new Error('Server returned HTML instead of JSON - check API endpoint');
+      } else {
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+      }
     }
     
     if (!response.ok) {

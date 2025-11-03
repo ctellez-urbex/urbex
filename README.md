@@ -75,6 +75,63 @@ src/
 - **Clients**: Carrusel infinito de logos de clientes
 - **Contact**: Formulario de contacto completo
 
+### Detail Property Page
+El módulo de detalle de propiedad presenta una arquitectura modular con componentes especializados que muestran información completa de cada propiedad.
+
+#### **Overview (Descripción General)**
+Componente principal que presenta una vista completa de la propiedad con 11 secciones de información:
+
+**Secciones de Información:**
+1. **Ubicación**: Dirección completa, localidad, UPL, barrio catastral, estrato, edificio
+2. **Terreno**: Área del terreno, esquinero, vía principal, frente x fondo, área del polígono
+3. **Características**: Predios, pisos, sótanos, área construida total, antigüedad, PH
+4. **Información Predial**: Avalúo catastral, predial por m², propietarios, valores totales, valores del suelo
+5. **Transacciones**: Estadísticas del último año y desde 2019 (valor promedio m², total compraventas)
+6. **Precios de Referencia en Venta**: Listings activos e inactivos con valores promedio
+7. **Precios de Referencia en Arriendo**: Listings activos e inactivos con valores promedio
+8. **Transacciones Reales en el Barrio**: Datos del último trimestre con valorización
+9. **Valores de Referencia del Barrio**: Oferta en venta y arriendo con valorización
+10. **P.O.T**: Tratamiento urbanístico, tipología, altura máxima, área de actividad, actuación estratégica, antejardín, aeronáutica
+11. **Información Demográfica**: Población total, viviendas, hogares, distribución por género
+
+**Características Técnicas:**
+- Diseño responsive con grid de 2 columnas (1 en móvil)
+- Cards con gradientes y efectos hover
+- Iconos específicos para cada sección (MapPin, Ruler, Home, FileText, TrendingUp, etc.)
+- Formato de moneda en pesos colombianos
+- Manejo seguro de datos con helpers: `getNestedValue`, `formatCurrency`, `formatNumber`
+- Cálculos derivados (ej: número de propietarios desde múltiples fuentes)
+- Enlaces externos a reportes de barrio
+- Soporte para tema oscuro
+- Renderizado condicional de valores nulos
+- **Integración de Mapas Interactivos:**
+  - Google Maps Street View para vista de calle
+  - Google Maps Satellite con overlay de polígono del lote
+  - Mapbox 3D para visualización tridimensional de edificios
+  - Carga dinámica de mapas con coordenadas desde la API
+  - Renderizado condicional basado en disponibilidad de datos de ubicación
+
+**Principios de Diseño:**
+- Single Responsibility Principle (SRP) - Cada InfoCard maneja una sección
+- Open/Closed Principle (OCP) - Fácil extensión sin modificación
+- DRY - Componentes y funciones reutilizables
+- Clean Architecture - Separación de lógica de presentación
+
+#### **Unit Analysis**
+Análisis detallado de construcción y unidades
+
+#### **Market Study**
+Estudio de mercado y transacciones
+
+#### **Lot Simulation**
+Simulación de desarrollo según POT
+
+#### **Owners**
+Información de propietarios y datos demográficos
+
+#### **Responsive Menu**
+Navegación fluida entre secciones con menú sticky
+
 ### Autenticación
 - **LoginForm**: Formulario de inicio de sesión
 - **SignUpForm**: Formulario de registro
@@ -673,6 +730,36 @@ El proyecto incluye configuración automática para CloudFront que maneja:
 - **Cache Optimization**: Headers optimizados para archivos estáticos
 - **Error Handling**: Manejo de errores 404/403
 
+### 🔗 Solución de Routing con Trailing Slash
+
+El proyecto está configurado para funcionar correctamente tanto en desarrollo local como en S3 + CloudFront.
+
+#### Configuración de Next.js
+- **trailingSlash: true**: Genera URLs con trailing slash (`/dashboard/`)
+- **S3 Compatible**: S3 automáticamente sirve `dashboard/index.html` cuando accedes a `/dashboard/`
+- **Consistencia**: Mismo comportamiento en local y producción
+
+#### Testing Local
+```bash
+# 1. Construir el proyecto
+npm run build
+
+# 2. Iniciar servidor local
+node serve-static.js
+
+# 3. Probar URLs (todas estas funcionan)
+# http://localhost:3000/dashboard     → redirige a /dashboard/
+# http://localhost:3000/dashboard/    → sirve dashboard/index.html
+# http://localhost:3000/properties/   → sirve properties/index.html
+```
+
+#### Comportamiento en Producción
+- `/dashboard` → CloudFront/S3 maneja la redirección
+- `/dashboard/` → S3 sirve automáticamente `dashboard/index.html`
+- Archivos estáticos (`/_next/static/*`) se sirven directamente
+
+Para más detalles sobre la solución de routing, consulta [docs/s3-trailing-slash-solution.md](./docs/s3-trailing-slash-solution.md).
+
 ## 🔄 Flujo de Desarrollo
 1. Crear componentes específicos en el directorio correspondiente
 2. Utilizar componentes UI compartidos para consistencia
@@ -740,6 +827,7 @@ https://eo6cj32bch.execute-api.us-east-2.amazonaws.com/prod/api/v1
 - `POST /auth/reset-password/` - Reset de contraseña
 - `GET /auth/profile/` - Obtener perfil de usuario
 - `POST /admin/users` - Lista de usuarios (administración)
+- `GET /property/{barmanpre}` - Obtener detalles de propiedad específica
 
 #### Autenticación
 Todas las peticiones a la API requieren un API key que debe enviarse en el header `x-api-key`. Algunos endpoints adicionalmente requieren un token de autorización en el header `Authorization: Bearer <token>`.
@@ -777,6 +865,63 @@ const registerResult = await registerUser({
 
 // Obtener perfil de usuario
 const profileResult = await getUserProfile(token)
+```
+
+#### Uso de la API de Properties
+
+La aplicación incluye funcionalidades para obtener detalles de propiedades desde una API externa:
+
+```typescript
+import { getPropertyDetails } from '@/config/api-properties'
+
+// Obtener detalles de una propiedad específica
+const propertyResult = await getPropertyDetails('BARMAN123', token)
+
+if (propertyResult.success) {
+  console.log('Property data:', propertyResult.data)
+} else {
+  console.error('Error:', propertyResult.error)
+}
+```
+
+**Características de la API de Properties:**
+- **Endpoint**: `GET /property/{barmanpre}` - Obtener detalles de propiedad
+- **Headers requeridos**:
+  - `x-api-key`: API key para autenticación
+  - `Authorization`: Bearer token (opcional)
+- **Parámetro**: `barmanpre` - ID único de la propiedad
+- **Fallback**: Si la API falla, usa búsqueda como respaldo
+- **Response**: Datos completos de la propiedad incluyendo ubicación, características, y metadatos
+
+##### GET /property/{barmanpre}
+Obtener detalles específicos de una propiedad por su ID (barmanpre).
+
+```bash
+GET /prod/api/v1/property/BARMAN123
+Headers:
+  Content-Type: application/json
+  x-api-key: <api_key>
+  Authorization: Bearer <token> (opcional)
+
+Response:
+{
+  "success": true,
+  "data": {
+    "id": 123,
+    "barmanpre": "BARMAN123",
+    "preaconst": 120,
+    "preaterre": 150,
+    "estrato": 3,
+    "formato_direccion": "Calle 123 #45-67",
+    "nombre_conjunto": "Conjunto Residencial ABC",
+    "prenbarrio": "Chapinero",
+    "precbarrio": "11001",
+    "locnombre": "Bogotá D.C.",
+    "wkt": "POLYGON((...))",
+    // ... más campos
+  },
+  "message": "Property details retrieved successfully"
+}
 ```
 
 #### Uso de la API de Administración

@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import { registerUser } from '@/config/api-auth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import Link from 'next/link';
 
 interface RegisterFormData {
@@ -432,18 +438,26 @@ const RegisterForm = memo(() => {
           >
             Plan *
           </label>
-          <Select
-            id="plan"
-            name="plan"
-            value={formData.plan}
-            onChange={handleInputChange('plan')}
-            options={planOptions}
-            placeholder="Selecciona un plan"
+          <Select 
+            value={formData.plan} 
+            onValueChange={(value) => setFormData(prev => ({ ...prev, plan: value }))}
             disabled={loading}
-            error={errors.plan}
-            className="w-full"
             required
-          />
+          >
+            <SelectTrigger className={`w-full ${errors.plan ? 'border-red-500' : ''}`}>
+              <SelectValue placeholder="Selecciona un plan" />
+            </SelectTrigger>
+            <SelectContent>
+              {planOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.plan && (
+            <p className="text-red-500 text-sm mt-1">{errors.plan}</p>
+          )}
         </div>
 
         {/* Password Field */}

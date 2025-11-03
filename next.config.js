@@ -6,18 +6,21 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 const nextConfig = {
   output: 'export', // Enable static export for S3 deployment
   distDir: 'out',
-  trailingSlash: true,
-  skipTrailingSlashRedirect: true,
+  trailingSlash: true, // Required for S3 static website hosting to resolve directory index files
   reactStrictMode: true,
+  
   // Configuración para manejar rutas en producción
   assetPrefix: process.env.NODE_ENV === 'production' ? '/' : '/',
   basePath: '',
+  
   // Optimizaciones de performance
   experimental: {
     optimizePackageImports: ['lucide-react', '@aws-sdk/client-cognito-identity-provider'],
   },
+  
   // Compresión de bundles
   compress: true,
+  
   // Optimización de imágenes
   images: {
     unoptimized: true,
@@ -27,4 +30,4 @@ const nextConfig = {
   },
 }
 
-module.exports = withBundleAnalyzer(nextConfig) 
+module.exports = withBundleAnalyzer(nextConfig)

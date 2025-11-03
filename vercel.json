@@ -1,4 +1,6 @@
 {
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
     {
       "source": "/(.*)",
@@ -24,23 +26,5 @@
         }
       ]
     }
-  ],
-  "routes": [
-    {
-      "src": "/auth/login",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/auth/(.*)",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/_next/(.*)",
-      "dest": "/index.html"
-    }
   ]
-} 
+}

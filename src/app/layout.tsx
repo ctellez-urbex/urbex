@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "@/styles/leaflet.css";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import RouteHandler from "@/components/layout/route-handler";
@@ -112,6 +113,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="//cognito-idp.us-east-2.amazonaws.com" />
         <link rel="dns-prefetch" href="//api.mailgun.net" />
+        <link rel="dns-prefetch" href="//maps.googleapis.com" />
+        <link rel="dns-prefetch" href="//api.mapbox.com" />
         
         {/* Performance meta tags */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
@@ -119,6 +122,34 @@ export default function RootLayout({
         
         {/* Environment Configuration - Load before any other scripts */}
         <script src="/env.js" />
+        
+        {/* Map APIs */}
+        <link 
+          href="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.css" 
+          rel="stylesheet" 
+        />
+        <script 
+          src="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.js"
+          async
+        />
+        <script 
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const apiKey = window.ENV?.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+                if (apiKey) {
+                  const script = document.createElement('script');
+                  script.src = 'https://maps.googleapis.com/maps/api/js?key=' + apiKey + '&callback=Function.prototype';
+                  script.async = true;
+                  script.defer = true;
+                  document.head.appendChild(script);
+                } else {
+                  console.warn('⚠️ Google Maps API key not configured');
+                }
+              })();
+            `
+          }}
+        />
       </head>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider

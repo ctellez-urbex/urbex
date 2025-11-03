@@ -1,9 +1,0 @@
-PLACEHOLDER IMAGES NEEDED
-
-Please add the following images to this directory for the hero carousel:
-
-1. msv29.jpg - Equipos comerciales
-2. msv33.jpg - Expansion
-3. msv31.jpg - Estructuración
-4. msv36.jpg - Brokeraje
-5. msv39.jpg - Pricinpal

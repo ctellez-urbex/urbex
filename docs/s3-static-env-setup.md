@@ -37,6 +37,18 @@ Tu aplicación está desplegada en **S3 + CloudFront** (contenido estático) y n
 7. Frontend uses window.ENV for API calls
 ```
 
+## ⚠️ **Problema Resuelto: Preservación de Credenciales en Desarrollo**
+
+**Problema anterior:** Al ejecutar `npm run dev`, el script `generate-env-js.js` sobrescribía las credenciales guardadas en `env.js` con valores por defecto.
+
+**Solución implementada:** El script ahora preserva automáticamente las credenciales existentes mediante:
+
+1. **Carga inteligente**: Lee el archivo `env.js` existente antes de generar uno nuevo
+2. **Fusión selectiva**: Mantiene credenciales reales y solo actualiza valores por defecto
+3. **Detección de valores**: Identifica automáticamente valores placeholder (`dev_`, `your_`, `tu_`, `http://localhost:3001`)
+
+**Resultado:** Ahora puedes ejecutar `npm run dev` sin perder tus credenciales configuradas.
+
 ## 🔧 **Configuración**
 
 ### **1. Generar Configuración para Producción**
