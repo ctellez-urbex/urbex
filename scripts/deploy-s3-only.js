@@ -101,6 +101,56 @@ async function uploadDirectory(dirPath, prefix = '') {
   return { success: successCount, total: totalCount };
 }
 
+// Function to create S3 bucket if it doesn't exist
+async function createBucketIfNeeded() {
+  const region = process.env.AWS_REGION || 'us-east-2';
+  
+  try {
+    // Check if bucket exists
+    await s3.headBucket({ Bucket: bucketName }).promise();
+    console.log(`✅ S3 bucket '${bucketName}' already exists`);
+    return false; // Bucket already exists
+  } catch (error) {
+    if (error.code === 'NotFound' || error.code === '404') {
+      console.log(`📦 Bucket '${bucketName}' not found. Creating it...`);
+      
+      try {
+        const params = {
+          Bucket: bucketName,
+          CreateBucketConfiguration: {
+            LocationConstraint: region === 'us-east-1' ? undefined : region
+          }
+        };
+        
+        // us-east-1 doesn't need LocationConstraint
+        if (region === 'us-east-1') {
+          delete params.CreateBucketConfiguration;
+        }
+        
+        await s3.createBucket(params).promise();
+        console.log(`✅ Bucket '${bucketName}' created successfully in region '${region}'`);
+        
+        // Wait a bit for bucket to be ready
+        console.log('⏳ Waiting for bucket to be ready...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        return true; // Bucket was created
+      } catch (createError) {
+        if (createError.code === 'BucketAlreadyExists') {
+          console.log(`✅ Bucket '${bucketName}' exists (created by another process)`);
+          return false;
+        }
+        console.error(`❌ Error creating bucket: ${createError.message}`);
+        throw createError;
+      }
+    } else {
+      // Different error (permissions, etc.)
+      console.error(`❌ Error checking bucket: ${error.message}`);
+      throw error;
+    }
+  }
+}
+
 // Function to verify S3 bucket configuration
 async function verifyBucketConfig() {
   try {
@@ -112,15 +162,28 @@ async function verifyBucketConfig() {
     try {
       const website = await s3.getBucketWebsite({ Bucket: bucketName }).promise();
       console.log('✅ Bucket website configuration found');
-      console.log(`🌐 Website URL: http://${bucketName}.s3-website-${process.env.AWS_REGION || 'us-east-2'}.amazonaws.com`);
+      const region = process.env.AWS_REGION || 'us-east-2';
+      console.log(`🌐 Website URL: http://${bucketName}.s3-website-${region}.amazonaws.com`);
     } catch (error) {
-      console.log('⚠️  No website configuration found');
-      console.log('💡 To access via HTTP, configure bucket as website:');
-      console.log(`   aws s3 website s3://${bucketName} --index-document index.html --error-document 404.html`);
+      if (error.code === 'NoSuchWebsiteConfiguration') {
+        console.log('⚠️  No website configuration found');
+        console.log('💡 To access via HTTP, configure bucket as website:');
+        console.log(`   aws s3 website s3://${bucketName} --index-document index.html --error-document 404.html`);
+      } else {
+        console.log(`⚠️  Could not check website configuration: ${error.message}`);
+      }
     }
     
   } catch (error) {
-    console.error(`❌ Error accessing S3 bucket '${bucketName}':`, error.message);
+    if (error.code === 'NotFound' || error.code === '404') {
+      console.error(`❌ S3 bucket '${bucketName}' does not exist`);
+      console.error('💡 The bucket should have been created automatically. Please check:');
+      console.error('   1. Your AWS credentials have permissions to create buckets');
+      console.error('   2. The bucket name is available (must be globally unique)');
+      console.error('   3. The region is correct');
+    } else {
+      console.error(`❌ Error accessing S3 bucket '${bucketName}':`, error.message);
+    }
     throw error;
   }
 }
@@ -144,29 +207,33 @@ async function verifyIndexHtml() {
 async function deployToS3() {
   console.log('🚀 Starting S3-only deployment...');
   console.log(`📦 Bucket: ${bucketName}`);
-  console.log(`📁 Source: ${buildDir}/server/app`);
+  console.log(`📁 Source: ${buildDir}`);
   console.log('');
   
-  const appDir = path.join(buildDir, 'server', 'app');
-  
-  if (!fs.existsSync(appDir)) {
-    console.error('❌ app directory not found. Run npm run build first.');
+  // Next.js static export generates files directly in out/
+  if (!fs.existsSync(buildDir)) {
+    console.error('❌ Build directory not found. Run npm run build first.');
     process.exit(1);
   }
   
   try {
-    // Step 1: Verify bucket configuration
+    // Step 1: Create bucket if needed
+    console.log('🔍 Checking if bucket exists...');
+    const wasCreated = await createBucketIfNeeded();
+    console.log('');
+    
+    // Step 2: Verify bucket configuration
     console.log('🔍 Verifying S3 bucket configuration...');
     await verifyBucketConfig();
     console.log('');
     
-    // Step 2: Upload all files
+    // Step 3: Upload all files
     console.log('📤 Uploading files to S3...');
-    const uploadResult = await uploadDirectory(appDir);
+    const uploadResult = await uploadDirectory(buildDir);
     console.log(`📊 Upload complete: ${uploadResult.success}/${uploadResult.total} files uploaded successfully`);
     console.log('');
     
-    // Step 3: Verify critical files
+    // Step 4: Verify critical files
     console.log('🔍 Verifying critical files...');
     const indexExists = await verifyIndexHtml();
     console.log('');
@@ -175,11 +242,17 @@ async function deployToS3() {
       console.log('✅ S3 deployment completed successfully!');
       console.log('');
       console.log('🌐 Access your site:');
-      console.log(`   Direct S3: https://${bucketName}.s3.amazonaws.com`);
-      console.log(`   Website URL: http://${bucketName}.s3-website-${process.env.AWS_REGION || 'us-east-2'}.amazonaws.com`);
+      const region = process.env.AWS_REGION || 'us-east-2';
+      console.log(`   Direct S3: https://${bucketName}.s3.${region}.amazonaws.com/index.html`);
+      console.log(`   Website URL: http://${bucketName}.s3-website-${region}.amazonaws.com`);
       console.log('');
       console.log('💡 Note: Website URL requires bucket to be configured as website');
       console.log('   Run: aws s3 website s3://' + bucketName + ' --index-document index.html --error-document 404.html');
+      console.log('');
+      console.log('🧪 Test URLs:');
+      console.log(`   ${bucketName}.s3-website-${region}.amazonaws.com/`);
+      console.log(`   ${bucketName}.s3-website-${region}.amazonaws.com/dashboard`);
+      console.log(`   ${bucketName}.s3-website-${region}.amazonaws.com/properties`);
     } else {
       console.log('⚠️  S3 deployment completed with warnings');
     }

@@ -10,6 +10,7 @@
     "deploy": "node scripts/deploy.js",
     "deploy:s3": "./scripts/deploy-s3-routing.sh",
     "deploy:s3-clean": "./scripts/deploy-s3-clean.sh",
+    "deploy:s3-only": "node scripts/deploy-s3-only.js",
     "start": "next start",
     "serve:static": "node serve-static.js",
     "serve:clean": "node scripts/clean-routing-server.js",

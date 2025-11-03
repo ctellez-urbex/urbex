@@ -36,6 +36,39 @@ check_dependencies() {
     echo -e "${GREEN}✅ Dependencies OK${NC}"
 }
 
+# Crear bucket si no existe
+create_bucket_if_needed() {
+    echo -e "${BLUE}🔍 Checking if bucket exists...${NC}"
+    
+    if aws s3 ls "s3://${S3_BUCKET}" 2>&1 | grep -q 'NoSuchBucket'; then
+        echo -e "${YELLOW}📦 Bucket '${S3_BUCKET}' not found. Creating it...${NC}"
+        
+        # Crear bucket según la región
+        if [ "${AWS_REGION}" = "us-east-1" ]; then
+            # us-east-1 no necesita LocationConstraint
+            aws s3api create-bucket \
+                --bucket "${S3_BUCKET}" \
+                --region "${AWS_REGION}" 2>&1 | grep -v "BucketAlreadyOwnedByYou" || true
+        else
+            # Otras regiones necesitan LocationConstraint
+            aws s3api create-bucket \
+                --bucket "${S3_BUCKET}" \
+                --region "${AWS_REGION}" \
+                --create-bucket-configuration LocationConstraint="${AWS_REGION}" 2>&1 | grep -v "BucketAlreadyOwnedByYou" || true
+        fi
+        
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✅ Bucket '${S3_BUCKET}' created successfully${NC}"
+            echo -e "${YELLOW}⏳ Waiting for bucket to be ready...${NC}"
+            sleep 3
+        else
+            echo -e "${YELLOW}⚠️  Bucket might already exist or creation failed. Continuing...${NC}"
+        fi
+    else
+        echo -e "${GREEN}✅ Bucket '${S3_BUCKET}' already exists${NC}"
+    fi
+}
+
 # Build de la aplicación
 build_app() {
     echo -e "${BLUE}🔨 Building application with clean routing...${NC}"
@@ -160,6 +193,7 @@ main() {
     echo ""
     
     check_dependencies
+    create_bucket_if_needed
     build_app
     configure_s3_website
     upload_to_s3
