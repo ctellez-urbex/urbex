@@ -32,6 +32,9 @@ yarn-error.log*
 .env.staging
 .env.development
 
+# generated env.js (contains secrets - generated at build time)
+public/env.js
+
 # vercel
 .vercel
 
