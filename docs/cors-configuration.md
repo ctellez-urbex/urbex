@@ -10,7 +10,7 @@ The backend needs to include these headers in all responses:
 ```
 Access-Control-Allow-Origin: https://d2i14zgn3xm1xu.cloudfront.net
 Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH
-Access-Control-Allow-Headers: Content-Type, x-api-key, Authorization
+Access-Control-Allow-Headers: Content-Type, x-api-key, api-key, Authorization
 Access-Control-Allow-Credentials: true
 ```
 
@@ -26,7 +26,7 @@ If using AWS API Gateway, configure CORS in the API Gateway console:
 5. Click "Actions" → "Enable CORS"
 6. Configure:
    - Access-Control-Allow-Origin: `https://d2i14zgn3xm1xu.cloudfront.net`
-   - Access-Control-Allow-Headers: `Content-Type,x-api-key,Authorization`
+   - Access-Control-Allow-Headers: `Content-Type,x-api-key,api-key,Authorization`
    - Access-Control-Allow-Methods: `GET,POST,PUT,DELETE,OPTIONS,PATCH`
    - Access-Control-Allow-Credentials: `true`
 
@@ -39,7 +39,7 @@ const response = {
   headers: {
     'Access-Control-Allow-Origin': 'https://d2i14zgn3xm1xu.cloudfront.net',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-    'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, x-api-key, api-key, Authorization',
     'Access-Control-Allow-Credentials': 'true'
   },
   body: JSON.stringify(data)
@@ -60,7 +60,7 @@ You can test CORS configuration using curl:
 ```bash
 curl -H "Origin: https://d2i14zgn3xm1xu.cloudfront.net" \
      -H "Access-Control-Request-Method: GET" \
-     -H "Access-Control-Request-Headers: x-api-key,Authorization" \
+     -H "Access-Control-Request-Headers: x-api-key,api-key,Authorization" \
      -X OPTIONS \
      https://eo6cj32bch.execute-api.us-east-2.amazonaws.com/prod/api/v1/admin/users
 ```

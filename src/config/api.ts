@@ -7,14 +7,28 @@
 
 // Helper function to get environment variables from static file
 function getStaticEnvVar(key: string, fallback: string = ''): string {
-  // Try to get from window.ENV (static file)
-  if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
-    return window.ENV[key];
+  // Try to get from window.ENV (static file) - for production
+  if (typeof window !== 'undefined' && window.ENV) {
+    if (window.ENV[key]) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`✅ Env var ${key} loaded from window.ENV`);
+      }
+      return window.ENV[key];
+    } else if (process.env.NODE_ENV === 'development') {
+      console.warn(`⚠️ Env var ${key} not found in window.ENV, available keys:`, Object.keys(window.ENV));
+    }
   }
   
-  // Fallback to process.env (for development)
+  // Fallback to process.env (for development/SSR)
   if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`✅ Env var ${key} loaded from process.env`);
+    }
     return process.env[key];
+  }
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(`⚠️ Env var ${key} not found, using fallback`);
   }
   
   return fallback;
