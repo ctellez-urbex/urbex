@@ -155,7 +155,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Small delay to ensure state is updated before navigation
         setTimeout(() => {
           console.log('🔵 Redirecting to dashboard')
-          router.push('/dashboard')
+          // Use /dashboard/ in development, /dashboard/index.html in production/static
+          const dashboardPath = process.env.NODE_ENV === 'development' 
+            ? '/dashboard/' 
+            : '/dashboard/index.html';
+          router.push(dashboardPath)
         }, 100)
         
         return { success: true }

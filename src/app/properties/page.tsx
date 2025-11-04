@@ -11,11 +11,11 @@ import { PropertySearchForm, PropertySearchFilters } from '@/components/properti
 import { CleanMapSearch } from '@/components/properties/CleanMapSearch';
 import { searchProperties, convertFiltersToApiRequest, PropertyData } from '@/config/api-properties';
 import { encryptBarmanpre, testEncryption } from '@/lib/encryption';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Building, Map, Search, AlertCircle, Sun, Moon } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { AlertCircle } from 'lucide-react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { Modal } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
 
 export default function PropertiesPage() {
   return (
@@ -28,16 +28,13 @@ export default function PropertiesPage() {
 function PropertiesPageContent() {
   const [properties, setProperties] = useState<PropertyData[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<PropertyData | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchPerformed, setSearchPerformed] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [currentFilters, setCurrentFilters] = useState<PropertySearchFilters | null>(null);
-  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    setMounted(true);
-    
     // Test encryption in development mode
     if (process.env.NODE_ENV === 'development') {
       setTimeout(() => {
@@ -48,20 +45,48 @@ function PropertiesPageContent() {
   }, []);
 
   const handlePropertySelect = (property: PropertyData | null) => {
-    setSelectedProperty(property);
-    
-    // Scroll to the selected property in the list
     if (property) {
-      setTimeout(() => {
-        const element = document.getElementById(`property-${property.id}`);
-        if (element) {
-          element.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
-          });
-        }
-      }, 100);
+      setSelectedProperty(property);
+      setIsModalOpen(true);
     }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProperty(null);
+  };
+
+  const handleVerDetalles = () => {
+    if (!selectedProperty) return;
+
+    // Encriptar el barmanpre
+    const encryptedToken = encryptBarmanpre(selectedProperty.barmanpre);
+    
+    // Guardar en localStorage con tiempo de expiración
+    const storageKey = `property_token_${Date.now()}`;
+    const tokenData = {
+      token: encryptedToken,
+      expiresAt: Date.now() + 60000, // Expira en 60 segundos
+      createdAt: Date.now()
+    };
+    
+    localStorage.setItem(storageKey, JSON.stringify(tokenData));
+    
+    // Construir URL sin el token visible
+    const detailUrl = `/detail_property/?ref=${storageKey}`;
+    
+    console.log('🚀 Abriendo detalle de propiedad:', selectedProperty.barmanpre);
+    console.log('🔐 Token guardado en localStorage con key:', storageKey);
+    console.log('⏰ Token expira en 60 segundos');
+    
+    // Abrir en nueva ventana
+    window.open(detailUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    
+    // Limpiar localStorage después de 60 segundos (por seguridad)
+    setTimeout(() => {
+      localStorage.removeItem(storageKey);
+      console.log('🧹 Token limpiado de localStorage');
+    }, 60000);
   };
 
   const handleFiltersChange = (filters: PropertySearchFilters) => {
@@ -219,191 +244,88 @@ function PropertiesPageContent() {
           </div>
         )}
 
-        {/* Map and Results Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Map */}
-          <div className="lg:col-span-2 space-y-4">
-            <CleanMapSearch
-              properties={properties}
-              onPolygonSearch={handlePolygonSearch}
-              onPropertySelect={handlePropertySelect}
-              selectedProperty={selectedProperty}
-              currentFilters={currentFilters}
-              loading={loading}
-            />
-            
-            {/* Search Tips - Only in map column */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Consejos de búsqueda</CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-gray-600 dark:text-gray-300 space-y-2">
-                <p>• <strong>🔵 Líneas azules:</strong> Se dibujan entre puntos mientras creas el polígono</p>
-                <p>• <strong>🔵 Área azul:</strong> Vista previa y resultado final del polígono</p>
-                <p>• <strong>🔵 Recuadros azules:</strong> Propiedades encontradas en el área</p>
-                <p>• <strong>Auto-cierre:</strong> Haz clic cerca del primer punto para cerrar automáticamente</p>
-                <p>• <strong>Nueva Búsqueda:</strong> Después de buscar, usa este botón para empezar de nuevo</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Results Summary */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="w-5 h-5" />
-                  Resultados
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">Buscando...</p>
-                  </div>
-                ) : properties.length > 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Se encontraron <strong>{properties.length}</strong> propiedades
-                    </p>
-                    
-                    {/* Property List */}
-                    <div className="max-h-[400px] overflow-y-auto space-y-2">
-                      {properties.map((property) => (
-                        <div
-                          key={property.id}
-                          id={`property-${property.id}`}
-                          className={`p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors ${
-                            selectedProperty?.id === property.id 
-                              ? 'bg-blue-50 dark:bg-blue-900 border-blue-300 dark:border-blue-600' 
-                              : ''
-                          }`}
-                          onClick={() => {
-                            handlePropertySelect(property);
-                          }}
-                        >
-                          <div className="space-y-1">
-                            <p className="font-medium text-sm">{property.formato_direccion}</p>
-                            <p className="text-xs text-gray-500">
-                              {property.prenbarrio}, {property.locnombre}
-                            </p>
-                            <div className="flex justify-between text-xs text-gray-500">
-                              <span>Estrato {property.estrato}</span>
-                              <span>{property.preaconst.toFixed(0)} m²</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Selected Property Details */}
-                    {selectedProperty && (
-                      <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700">
-                        <div className="flex justify-between items-start mb-3">
-                          <h4 className="font-semibold text-sm text-blue-900 dark:text-blue-100">
-                            Propiedad Seleccionada
-                          </h4>
-                          <button
-                            onClick={() => {                              
-                              // Encriptar el barmanpre
-                              const encryptedToken = encryptBarmanpre(selectedProperty.barmanpre);
-                              
-                              // Guardar en localStorage con tiempo de expiración
-                              const storageKey = `property_token_${Date.now()}`;
-                              const tokenData = {
-                                token: encryptedToken,
-                                expiresAt: Date.now() + 60000, // Expira en 60 segundos
-                                createdAt: Date.now()
-                              };
-                              
-                              localStorage.setItem(storageKey, JSON.stringify(tokenData));
-                              
-                              // Construir URL sin el token visible
-                              const detailUrl = `/detail_property/?ref=${storageKey}`;
-                              
-                              console.log('🚀 Abriendo detalle de propiedad:', selectedProperty.barmanpre);
-                              console.log('🔐 Token guardado en localStorage con key:', storageKey);
-                              console.log('⏰ Token expira en 60 segundos');
-                              
-                              // Abrir en nueva ventana
-                              window.open(detailUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
-                              
-                              // Limpiar localStorage después de 60 segundos (por seguridad)
-                              setTimeout(() => {
-                                localStorage.removeItem(storageKey);
-                                console.log('🧹 Token limpiado de localStorage');
-                              }, 60000);
-                            }}
-                            className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-                          >
-                            Ver Detalles
-                          </button>
-                        </div>
-                        <div className="space-y-2 text-xs">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <p className="text-blue-700 dark:text-blue-300 font-medium">Dirección:</p>
-                              <p className="text-blue-900 dark:text-blue-100">{selectedProperty.formato_direccion}</p>
-                            </div>
-                            <div>
-                              <p className="text-blue-700 dark:text-blue-300 font-medium">Estrato:</p>
-                              <p className="text-blue-900 dark:text-blue-100">{selectedProperty.estrato}</p>
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-blue-700 dark:text-blue-300 font-medium">Ubicación:</p>
-                            <p className="text-blue-900 dark:text-blue-100">{selectedProperty.prenbarrio}, {selectedProperty.locnombre}</p>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <p className="text-blue-700 dark:text-blue-300 font-medium">Área construida:</p>
-                              <p className="text-blue-900 dark:text-blue-100">{selectedProperty.preaconst.toFixed(0)} m²</p>
-                            </div>
-                            <div>
-                              <p className="text-blue-700 dark:text-blue-300 font-medium">Área terreno:</p>
-                              <p className="text-blue-900 dark:text-blue-100">{selectedProperty.preaterre.toFixed(0)} m²</p>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <p className="text-blue-700 dark:text-blue-300 font-medium">Predios:</p>
-                              <p className="text-blue-900 dark:text-blue-100">{selectedProperty.predios}</p>
-                            </div>
-                            <div>
-                              <p className="text-blue-700 dark:text-blue-300 font-medium">Pisos:</p>
-                              <p className="text-blue-900 dark:text-blue-100">{selectedProperty.connpisos || 'N/A'}</p>
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-blue-700 dark:text-blue-300 font-medium">Año construcción:</p>
-                            <p className="text-blue-900 dark:text-blue-100">{selectedProperty.prevetustzmin} - {selectedProperty.prevetustzmax}</p>
-                          </div>
-                          <div>
-                            <p className="text-blue-700 dark:text-blue-300 font-medium">Matrícula:</p>
-                            <p className="text-blue-900 dark:text-blue-100 font-mono">{selectedProperty.barmanpre}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <Search className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm text-gray-500">
-                      {searchPerformed 
-                        ? 'No se encontraron propiedades con los criterios especificados'
-                        : 'Usa el formulario de búsqueda para encontrar propiedades'
-                      }
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-
-          </div>
+        {/* Map Section */}
+        <div className="w-full">
+          <CleanMapSearch
+            properties={properties}
+            onPolygonSearch={handlePolygonSearch}
+            onPropertySelect={handlePropertySelect}
+            selectedProperty={selectedProperty}
+            currentFilters={currentFilters}
+            loading={loading}
+          />
         </div>
+
+        {/* Property Modal */}
+        <Modal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          title={selectedProperty ? "Información de la Propiedad" : ""}
+        >
+          {selectedProperty && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Dirección:</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{selectedProperty.formato_direccion}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Estrato:</p>
+                    <p className="text-sm text-gray-900 dark:text-white">{selectedProperty.estrato}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Ubicación:</p>
+                    <p className="text-sm text-gray-900 dark:text-white">{selectedProperty.prenbarrio}, {selectedProperty.locnombre}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Área construida:</p>
+                    <p className="text-sm text-gray-900 dark:text-white">{selectedProperty.preaconst.toFixed(0)} m²</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Área terreno:</p>
+                    <p className="text-sm text-gray-900 dark:text-white">{selectedProperty.preaterre.toFixed(0)} m²</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Predios:</p>
+                    <p className="text-sm text-gray-900 dark:text-white">{selectedProperty.predios}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Pisos:</p>
+                    <p className="text-sm text-gray-900 dark:text-white">{selectedProperty.connpisos || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Año construcción:</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{selectedProperty.prevetustzmin} - {selectedProperty.prevetustzmax}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Matrícula:</p>
+                  <p className="text-xs text-gray-900 dark:text-white font-mono">{selectedProperty.barmanpre}</p>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-200 dark:border-gray-800 flex justify-end">
+                <Button
+                  onClick={handleVerDetalles}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Ver Detalles
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal>
       </div>
     </div>
   );

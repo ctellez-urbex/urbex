@@ -28,15 +28,22 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     setMounted(true)
   }, [])
 
+  // Use /dashboard/ in development, /dashboard/index.html in production/static
+  const getRoute = (basePath: string) => {
+    return process.env.NODE_ENV === 'development' 
+      ? `${basePath}/` 
+      : `${basePath}/index.html`;
+  };
+
   const handleSignOut = async () => {
     await signOut()
-    router.push('/auth/login/index.html')
+    router.push(getRoute('/auth/login'))
   }
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard/index.html', icon: Home },
-    { name: 'Usuarios', href: '/admin/users/index.html', icon: Users, adminOnly: parseInt(user?.su || '0') > 1 ? false : true },
-    { name: 'Propiedades', href: '/properties/index.html', icon: Building, adminOnly: parseInt(user?.su || '0') > 1 ? false : true },
+    { name: 'Dashboard', href: getRoute('/dashboard'), icon: Home },
+    { name: 'Usuarios', href: getRoute('/admin/users'), icon: Users, adminOnly: parseInt(user?.su || '0') > 1 ? false : true },
+    { name: 'Propiedades', href: getRoute('/properties'), icon: Building, adminOnly: parseInt(user?.su || '0') > 1 ? false : true },
     //{ name: 'Configuración', href: '/settings', icon: Settings },
   ]
 

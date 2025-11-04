@@ -10,7 +10,11 @@ export default function Home() {
   useEffect(() => {
     // Si el usuario está autenticado, redirigir al dashboard
     if (!loading && user && typeof window !== 'undefined') {
-      window.location.href = '/dashboard/index.html'
+      // Use /dashboard/ in development, /dashboard/index.html in production/static
+      const dashboardPath = process.env.NODE_ENV === 'development' 
+        ? '/dashboard/' 
+        : '/dashboard/index.html';
+      window.location.href = dashboardPath
     }
   }, [user, loading])
 

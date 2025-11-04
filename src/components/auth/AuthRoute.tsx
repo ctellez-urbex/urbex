@@ -12,8 +12,13 @@ interface AuthRouteProps {
 
 export const AuthRoute: React.FC<AuthRouteProps> = ({ 
   children, 
-  redirectTo = '/dashboard/index.html' 
+  redirectTo 
 }) => {
+  // Default redirect: /dashboard/ in development, /dashboard/index.html in production/static
+  const defaultRedirect = process.env.NODE_ENV === 'development' 
+    ? '/dashboard/' 
+    : '/dashboard/index.html';
+  const finalRedirectTo = redirectTo || defaultRedirect;
   const { user, loading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
@@ -23,9 +28,9 @@ export const AuthRoute: React.FC<AuthRouteProps> = ({
     if (!loading && user) {
       setIsNavigating(true)
       // Use replace instead of push to avoid adding to history
-      router.replace(redirectTo)
+      router.replace(finalRedirectTo)
     }
-  }, [user, loading, router, redirectTo])
+  }, [user, loading, router, finalRedirectTo])
 
   // Show loading screen while checking auth status or navigating
   if (loading || isNavigating) {

@@ -11,16 +11,21 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
-  redirectTo = '/auth/login/index.html' 
+  redirectTo 
 }) => {
+  // Default redirect: /auth/login/ in development, /auth/login/index.html in production/static
+  const defaultRedirect = process.env.NODE_ENV === 'development' 
+    ? '/auth/login/' 
+    : '/auth/login/index.html';
+  const finalRedirectTo = redirectTo || defaultRedirect;
   const { user, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push(redirectTo)
+      router.push(finalRedirectTo)
     }
-  }, [user, loading, router, redirectTo])
+  }, [user, loading, router, finalRedirectTo])
 
   // Show loading spinner while checking auth status
   if (loading) {

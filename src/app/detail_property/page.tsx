@@ -182,8 +182,9 @@ function DetailPropertyContent() {
       index === 0 ? { ...call, status: 'loading' } : call
     ));
 
+    let buildingResult: DetailBuildingResponse | null = null;
     try {
-      const buildingResult = await getDetailBuilding(propertyData.id);
+      buildingResult = await getDetailBuilding(propertyData.id);
       setBuildingDetails(buildingResult);
       setApiCalls(prev => prev.map((call, index) => 
         index === 0 ? { ...call, status: 'success', data: buildingResult } : call
@@ -204,6 +205,23 @@ function DetailPropertyContent() {
       setIsInitialLoadComplete(true); // Mostrar página aunque haya error
     }
 
+    // Extract polygon from building details if available
+    let polygon: string | undefined;
+    if (buildingResult?.data_lote_polygon) {
+      const lotePolygon = buildingResult.data_lote_polygon;
+      // Try to extract polygon from different possible locations
+      polygon = lotePolygon?.plot?.wkt || 
+                lotePolygon?.wkt || 
+                lotePolygon?.polygon ||
+                (typeof lotePolygon === 'string' ? lotePolygon : undefined);
+      
+      if (polygon) {
+        console.log('✅ Polygon extraído de building details:', polygon.substring(0, 100) + '...');
+      } else {
+        console.warn('⚠️ No se pudo extraer polygon de building details');
+      }
+    }
+
     // SEGUNDA FASE: Cargar las demás APIs en segundo plano
     console.log('📡 FASE 2: Cargando APIs adicionales en segundo plano...');
     
@@ -216,7 +234,7 @@ function DetailPropertyContent() {
       },
       {
         name: 'Market Study',
-        apiCall: () => getMarketStudy(propertyData.id),
+        apiCall: () => getMarketStudy(propertyData.id, polygon),
         setState: setMarketStudy,
         index: 2
       },
@@ -441,31 +459,24 @@ function DetailPropertyContent() {
 
   // Check if there are APIs still loading in the background
   const backgroundApisLoading = apiCalls.slice(1).some(call => call.status === 'loading' || call.status === 'pending');
-  const backgroundApisCount = apiCalls.slice(1).filter(call => call.status === 'loading' || call.status === 'pending').length;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
-      {/* Background Loading Indicator */}
-      {backgroundApisLoading && (
-        <div className="sticky top-0 z-50 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800">
-          <div className="container mx-auto px-4 py-2">
-            <div className="flex items-center justify-center gap-2 text-sm text-blue-700 dark:text-blue-300">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Cargando datos adicionales ({backgroundApisCount} APIs pendientes)...</span>
-            </div>
+      {/* Header with Theme Toggle - Only in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className={`sticky ${backgroundApisLoading ? 'top-[41px]' : 'top-0'} z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm`}>
+          <div className="container mx-auto px-4 py-3 flex justify-end">
+            <ThemeToggle />
           </div>
         </div>
       )}
 
-      {/* Header with Theme Toggle */}
-      <div className={`sticky ${backgroundApisLoading ? 'top-[41px]' : 'top-0'} z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm`}>
-        <div className="container mx-auto px-4 py-3 flex justify-end">
-          <ThemeToggle />
-        </div>
-      </div>
-
       {/* Responsive Menu - Positioned below header */}
-      <div className={`sticky ${backgroundApisLoading ? 'top-[98px]' : 'top-[57px]'} z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700`}>
+      <div className={`sticky ${
+        backgroundApisLoading 
+          ? process.env.NODE_ENV === 'development' ? 'top-[98px]' : 'top-[41px]'
+          : process.env.NODE_ENV === 'development' ? 'top-[57px]' : 'top-0'
+      } z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700`}>
         <div className="container mx-auto px-4 py-2">
           <ResponsiveMenu 
             onItemClick={handleMenuItemClick}

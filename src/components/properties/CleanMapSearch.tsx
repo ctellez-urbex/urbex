@@ -11,6 +11,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTheme } from 'next-themes';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Map, Trash2, Search } from 'lucide-react';
@@ -39,9 +40,22 @@ export function CleanMapSearch({
 }: CleanMapSearchProps) {
   console.log('🗺️ CleanMapSearch component initialized');
   
+  const { theme } = useTheme();
   const [isClient, setIsClient] = useState(false);
   const [polygonPoints, setPolygonPoints] = useState<[number, number][]>([]);
   const [isSearchCompleted, setIsSearchCompleted] = useState(false);
+  
+  // Get polygon colors based on theme (always blue, but adjusted for dark/light)
+  const getPolygonColors = () => {
+    const isDark = theme === 'dark';
+    return {
+      border: isDark ? '#60a5fa' : '#1e40af',      // Lighter blue in dark, darker blue in light
+      fill: isDark ? '#3b82f6' : '#3b82f6',        // Same blue fill, but opacity will differ
+      opacity: isDark ? 0.5 : 0.4,                 // More opacity in dark mode for visibility
+      finalOpacity: isDark ? 0.6 : 0.5,            // Final polygon more visible in dark
+      weight: isDark ? 5 : 4,                       // Slightly thicker in dark mode
+    };
+  };
   
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -79,6 +93,25 @@ export function CleanMapSearch({
           scrollWheelZoom: true,
           doubleClickZoom: false, // Disable to use for polygon finishing
         });
+        
+        // Force overlay pane to not inherit grayscale filter - CRITICAL for blue polygons
+        setTimeout(() => {
+          const overlayPane = map.getPane('overlayPane');
+          if (overlayPane) {
+            (overlayPane as HTMLElement).style.filter = 'none';
+            (overlayPane as HTMLElement).style.webkitFilter = 'none';
+            (overlayPane as HTMLElement).style.isolation = 'isolate';
+            console.log('✅ Overlay pane filter removed - polygons will remain blue');
+          }
+          
+          // Also ensure marker pane doesn't get grayscale
+          const markerPane = map.getPane('markerPane');
+          if (markerPane) {
+            (markerPane as HTMLElement).style.filter = 'none';
+            (markerPane as HTMLElement).style.webkitFilter = 'none';
+            (markerPane as HTMLElement).style.isolation = 'isolate';
+          }
+        }, 100);
 
         // Add high-quality tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -202,6 +235,9 @@ export function CleanMapSearch({
 
     try {
       const L = await import('leaflet');
+      const currentTheme = theme || 'light';
+      const colors = getPolygonColors();
+      const isDarkMode = currentTheme === 'dark';
 
       // Remove existing visuals
       if (currentPolygonRef.current) {
@@ -222,44 +258,136 @@ export function CleanMapSearch({
       if (points.length >= 3) {
         console.log('🔵 Drawing bright blue polygon preview with', points.length, 'points');
         const polygon = L.polygon(points, {
-          color: '#1e40af',        // Dark blue border for contrast
-          weight: 4,
+          color: colors.border,        // Theme-aware blue border
+          weight: colors.weight,
           opacity: 1,
-          fillColor: '#3b82f6',    // Bright blue fill
-          fillOpacity: 0.4,        // More visible fill
+          fillColor: colors.fill,      // Theme-aware blue fill
+          fillOpacity: colors.opacity, // Theme-aware opacity
           interactive: false,
           className: 'drawing-polygon'
         }).addTo(mapInstanceRef.current);
         
+        // Force blue colors on the SVG element to override grayscale filter - Multiple attempts
+        const forceColors = () => {
+          const path = polygon.getElement() as SVGPathElement | null;
+          if (path) {
+            // Set attributes
+            path.setAttribute('stroke', colors.border);
+            path.setAttribute('fill', colors.fill);
+            path.setAttribute('stroke-width', colors.weight.toString());
+            path.setAttribute('stroke-opacity', '1');
+            path.setAttribute('fill-opacity', colors.opacity.toString());
+            
+            // Set inline styles (highest priority)
+            if (path instanceof SVGElement) {
+              path.style.setProperty('stroke', colors.border, 'important');
+              path.style.setProperty('fill', colors.fill, 'important');
+              path.style.setProperty('stroke-width', `${colors.weight}px`, 'important');
+              path.style.setProperty('stroke-opacity', '1', 'important');
+              path.style.setProperty('fill-opacity', colors.opacity.toString(), 'important');
+              path.style.setProperty('filter', 'none', 'important');
+              path.style.setProperty('-webkit-filter', 'none', 'important');
+              path.style.setProperty('mix-blend-mode', 'normal', 'important');
+            }
+            
+            // Force parent SVG container
+            const svg = path.closest('svg') as SVGElement | null;
+            if (svg) {
+              svg.style.setProperty('filter', 'none', 'important');
+              svg.style.setProperty('-webkit-filter', 'none', 'important');
+            }
+            
+            // Force overlay pane
+            const overlayPane = path.closest('.leaflet-overlay-pane') as HTMLElement | null;
+            if (overlayPane) {
+              overlayPane.style.setProperty('filter', 'none', 'important');
+              overlayPane.style.setProperty('-webkit-filter', 'none', 'important');
+            }
+            
+            console.log('✅ Forced blue colors on polygon element');
+            return true;
+          }
+          return false;
+        };
+        
+        // Try multiple times to ensure it works
+        setTimeout(forceColors, 10);
+        setTimeout(forceColors, 50);
+        setTimeout(forceColors, 100);
+        
         currentPolygonRef.current = polygon;
         console.log('✅ Bright blue polygon added to map');
-        console.log('🎨 Polygon colors: border=#1e40af, fill=#3b82f6, opacity=0.4');
+        console.log(`🎨 Polygon colors: border=${colors.border}, fill=${colors.fill}, opacity=${colors.opacity}`);
       } 
       // Show line if 2+ points - DRAWING MODE
       else if (points.length >= 2) {
         console.log('🔵 Drawing bright blue line with', points.length, 'points');
         const line = L.polyline(points, {
-          color: '#1e40af',        // Dark blue line for visibility
-          weight: 4,
+          color: colors.border,        // Theme-aware blue line
+          weight: colors.weight,
           opacity: 1,
           interactive: false,
           className: 'drawing-line'
         }).addTo(mapInstanceRef.current);
         
+        // Force blue color on the SVG element to override grayscale filter - Multiple attempts
+        const forceLineColors = () => {
+          const path = line.getElement() as SVGPathElement | null;
+          if (path) {
+            // Set attributes
+            path.setAttribute('stroke', colors.border);
+            path.setAttribute('stroke-width', colors.weight.toString());
+            path.setAttribute('stroke-opacity', '1');
+            
+            // Set inline styles (highest priority)
+            if (path instanceof SVGElement) {
+              path.style.setProperty('stroke', colors.border, 'important');
+              path.style.setProperty('stroke-width', `${colors.weight}px`, 'important');
+              path.style.setProperty('stroke-opacity', '1', 'important');
+              path.style.setProperty('filter', 'none', 'important');
+              path.style.setProperty('-webkit-filter', 'none', 'important');
+              path.style.setProperty('mix-blend-mode', 'normal', 'important');
+            }
+            
+            // Force parent SVG container
+            const svg = path.closest('svg') as SVGElement | null;
+            if (svg) {
+              svg.style.setProperty('filter', 'none', 'important');
+              svg.style.setProperty('-webkit-filter', 'none', 'important');
+            }
+            
+            // Force overlay pane
+            const overlayPane = path.closest('.leaflet-overlay-pane') as HTMLElement | null;
+            if (overlayPane) {
+              overlayPane.style.setProperty('filter', 'none', 'important');
+              overlayPane.style.setProperty('-webkit-filter', 'none', 'important');
+            }
+            
+            console.log('✅ Forced blue color on line element');
+            return true;
+          }
+          return false;
+        };
+        
+        // Try multiple times to ensure it works
+        setTimeout(forceLineColors, 10);
+        setTimeout(forceLineColors, 50);
+        setTimeout(forceLineColors, 100);
+        
         currentLineRef.current = line;
         console.log('✅ Bright blue line added to map');
-        console.log('🎨 Line color: #1e40af, weight=4px');
+        console.log(`🎨 Line color: ${colors.border}, weight=${colors.weight}px`);
       }
       // Show single point - START MODE
       else if (points.length === 1) {
         console.log('🔵 Drawing bright blue starting point');
         const marker = L.circleMarker(points[0], {
-          color: '#1e40af',        // Dark blue border
+          color: colors.border,        // Theme-aware blue border
           weight: 3,
           opacity: 1,
-          fillColor: '#3b82f6',    // Bright blue fill
-          fillOpacity: 0.8,
-          radius: 8,               // Larger radius
+          fillColor: colors.fill,      // Theme-aware blue fill
+          fillOpacity: isDarkMode ? 0.9 : 0.8, // Slightly more visible in dark
+          radius: 8,                   // Larger radius
           interactive: false,
           className: 'starting-point'
         }).addTo(mapInstanceRef.current);
@@ -272,6 +400,14 @@ export function CleanMapSearch({
       console.error('Error updating polygon visual:', error);
     }
   };
+  
+  // Re-render polygon when theme changes
+  useEffect(() => {
+    if (polygonPoints.length > 0 && mapInstanceRef.current) {
+      updatePolygonVisual(polygonPoints);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme]); // Re-run when theme changes
 
   // Finish polygon and trigger search
   const finishPolygon = async () => {
@@ -306,15 +442,64 @@ export function CleanMapSearch({
       }
 
       // Show final search area polygon - very bright blue for maximum visibility
+      const colors = getPolygonColors();
       const finalPolygon = L.polygon(points, {
-        color: '#1e40af',        // Dark blue border for maximum contrast
-        weight: 5,
+        color: colors.border,          // Theme-aware blue border
+        weight: colors.weight + 1,     // Slightly thicker for final polygon
         opacity: 1,
-        fillColor: '#3b82f6',    // Bright blue fill
-        fillOpacity: 0.5,        // Higher opacity for visibility
+        fillColor: colors.fill,        // Theme-aware blue fill
+        fillOpacity: colors.finalOpacity, // Theme-aware final opacity
         interactive: false,
         className: 'final-search-polygon'  // Custom class for targeting
       }).addTo(mapInstanceRef.current);
+      
+      // Force blue colors on the final polygon SVG element to override grayscale filter - Multiple attempts
+      const forceFinalColors = () => {
+        const path = finalPolygon.getElement() as SVGPathElement | null;
+        if (path) {
+          // Set attributes
+          path.setAttribute('stroke', colors.border);
+          path.setAttribute('fill', colors.fill);
+          path.setAttribute('stroke-width', (colors.weight + 1).toString());
+          path.setAttribute('stroke-opacity', '1');
+          path.setAttribute('fill-opacity', colors.finalOpacity.toString());
+          
+          // Set inline styles (highest priority)
+          if (path instanceof SVGElement) {
+            path.style.setProperty('stroke', colors.border, 'important');
+            path.style.setProperty('fill', colors.fill, 'important');
+            path.style.setProperty('stroke-width', `${colors.weight + 1}px`, 'important');
+            path.style.setProperty('stroke-opacity', '1', 'important');
+            path.style.setProperty('fill-opacity', colors.finalOpacity.toString(), 'important');
+            path.style.setProperty('filter', 'none', 'important');
+            path.style.setProperty('-webkit-filter', 'none', 'important');
+            path.style.setProperty('mix-blend-mode', 'normal', 'important');
+          }
+          
+          // Force parent SVG container
+          const svg = path.closest('svg') as SVGElement | null;
+          if (svg) {
+            svg.style.setProperty('filter', 'none', 'important');
+            svg.style.setProperty('-webkit-filter', 'none', 'important');
+          }
+          
+          // Force overlay pane
+          const overlayPane = path.closest('.leaflet-overlay-pane') as HTMLElement | null;
+          if (overlayPane) {
+            overlayPane.style.setProperty('filter', 'none', 'important');
+            overlayPane.style.setProperty('-webkit-filter', 'none', 'important');
+          }
+          
+          console.log('✅ Forced blue colors on final polygon element');
+          return true;
+        }
+        return false;
+      };
+      
+      // Try multiple times to ensure it works
+      setTimeout(forceFinalColors, 10);
+      setTimeout(forceFinalColors, 50);
+      setTimeout(forceFinalColors, 100);
       
       currentPolygonRef.current = finalPolygon;
 
@@ -376,13 +561,14 @@ export function CleanMapSearch({
                   return [lat, lng] as [number, number];
                 });
                 
-                // Create blue rectangle (polygon) for property
+                // Create blue rectangle (polygon) for property - theme aware
+                const colors = getPolygonColors();
                 const propertyPolygon = L.polygon(coordinates, {
-                  color: '#3b82f6',        // Blue border
+                  color: colors.fill,        // Theme-aware blue border
                   weight: 2,
-                  opacity: 0.8,
-                  fillColor: '#3b82f6',    // Blue fill
-                  fillOpacity: 0.3,
+                  opacity: theme === 'dark' ? 0.9 : 0.8,
+                  fillColor: colors.fill,    // Theme-aware blue fill
+                  fillOpacity: theme === 'dark' ? 0.4 : 0.3, // More visible in dark mode
                   interactive: true
                 });
 
@@ -406,7 +592,7 @@ export function CleanMapSearch({
                   const marker = L.marker([lat, lng], {
                     icon: L.divIcon({
                       className: 'property-marker',
-                      html: '<div style="background: #3b82f6; width: 16px; height: 16px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                      html: '<div style="background: #2468D6; width: 16px; height: 16px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
                       iconSize: [20, 20],
                       iconAnchor: [10, 10]
                     })

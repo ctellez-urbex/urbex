@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
+import { useTheme } from 'next-themes';
 import { Card } from '@/components/ui/card';
 import { MapPin, Building2 } from 'lucide-react';
 
@@ -23,17 +24,36 @@ const getNestedValue = (obj: any, path: string, defaultValue: any = null): any =
 };
 
 export default function MarketMap({ data }: MarketMapProps) {
+  const { theme } = useTheme();
   const mapInitialized = useRef(false);
   const mapRef = useRef<any>(null);
 
   const data_polygon_radio = data?.data_polygon_radio || {};
   const data_transacciones = data?.data_transacciones || {};
+  
+  // Get marker colors based on theme (always blue variants)
+  const getMarkerColors = (hasTransactions: boolean) => {
+    const isDark = theme === 'dark';
+    if (hasTransactions) {
+      // With transactions: brighter blue in dark, darker blue in light
+      return isDark ? '#60a5fa' : '#2563eb'; // Light blue / Dark blue
+    } else {
+      // Without transactions: lighter blue in dark, darker blue in light  
+      return isDark ? '#93c5fd' : '#1e40af'; // Very light blue / Very dark blue
+    }
+  };
   const latitud = data?.latitud;
   const longitud = data?.longitud;
   const polygon = data?.polygon;
 
   useEffect(() => {
-    if (mapInitialized.current || typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
+    
+    // Reset map initialization when theme changes to re-render with new colors
+    if (mapInitialized.current && mapRef.current) {
+      mapRef.current.remove();
+      mapInitialized.current = false;
+    }
     
     const initMap = () => {
       if (!(window as any).L) {
@@ -100,15 +120,15 @@ export default function MarketMap({ data }: MarketMapProps) {
           lotesData.forEach((lote: any, index: number) => {
             if (lote.latitud && lote.longitud) {
               const hasTransactions = lote.transacciones > 0;
-              const color = hasTransactions ? '#B20256' : '#5A189A';
+              const color = getMarkerColors(hasTransactions);
               
               const marker = L.circleMarker([lote.latitud, lote.longitud], {
                 radius: 8,
                 fillColor: color,
                 color: color,
-                weight: 1,
+                weight: theme === 'dark' ? 2 : 1, // Slightly thicker in dark mode
                 opacity: 1,
-                fillOpacity: 0.8
+                fillOpacity: theme === 'dark' ? 0.9 : 0.8 // More visible in dark mode
               }).addTo(mapRef.current);
 
               // Create popup content
@@ -158,7 +178,7 @@ export default function MarketMap({ data }: MarketMapProps) {
         console.error('❌ Error initializing MarketMap:', error);
       }
     };
-
+    
     // Try to initialize after a delay
     const timer = setTimeout(initMap, 1000);
 
@@ -169,7 +189,8 @@ export default function MarketMap({ data }: MarketMapProps) {
         mapRef.current = null;
       }
     };
-  }, [latitud, longitud, polygon, data_polygon_radio]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme, latitud, longitud, polygon, data_polygon_radio]); // Include theme in dependencies
 
   // Load Leaflet CSS and JS
   useEffect(() => {

@@ -36,21 +36,38 @@
 
 
 /* Grayscale map tiles - optimized for visual quality */
-.grayscale-map {
-  filter: grayscale(100%) contrast(1.2) brightness(1.05) saturate(0);
-  -webkit-filter: grayscale(100%) contrast(1.2) brightness(1.05) saturate(0);
-  transition: filter 0.3s ease;
+/* Apply grayscale only to map tiles, not to overlays (polygons) */
+.grayscale-map .leaflet-tile-pane {
+  filter: grayscale(70%) contrast(1.1) brightness(1.05);
+  -webkit-filter: grayscale(70%) contrast(1.1) brightness(1.05);
 }
 
-/* Exclude polygon elements from grayscale filter */
+.grayscale-map .leaflet-tile-pane img,
+.grayscale-map .leaflet-tile-pane canvas {
+  filter: grayscale(70%) contrast(1.1) brightness(1.05);
+  -webkit-filter: grayscale(70%) contrast(1.1) brightness(1.05);
+}
+
+/* CRITICAL: Exclude overlay pane from grayscale filter - This prevents ALL SVG elements from being grayed */
 .grayscale-map .leaflet-overlay-pane {
   filter: none !important;
   -webkit-filter: none !important;
+  isolation: isolate !important; /* Create new stacking context to prevent filter inheritance */
+  will-change: filter; /* Optimize rendering */
 }
 
 .grayscale-map .leaflet-overlay-pane svg {
   filter: none !important;
   -webkit-filter: none !important;
+}
+
+/* Force all SVG paths and polylines to not have grayscale filter - MUST be after overlay-pane */
+.grayscale-map .leaflet-overlay-pane svg path,
+.grayscale-map .leaflet-overlay-pane svg polyline,
+.grayscale-map .leaflet-overlay-pane svg circle {
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
 }
 
 /* Ensure map tiles render crisply */
@@ -153,12 +170,30 @@
 }
 
 /* Force blue color for final search polygon class */
-.grayscale-map .final-search-polygon {
+.grayscale-map .final-search-polygon,
+.grayscale-map .final-search-polygon path,
+.grayscale-map .leaflet-overlay-pane .final-search-polygon,
+.grayscale-map .leaflet-overlay-pane .final-search-polygon path {
   stroke: #1e40af !important;
   stroke-width: 5px !important;
   stroke-opacity: 1 !important;
   fill: #3b82f6 !important;
   fill-opacity: 0.6 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Dark mode adjustments for final search polygon */
+.dark .grayscale-map .final-search-polygon,
+.dark .grayscale-map .final-search-polygon path,
+.dark .grayscale-map .leaflet-overlay-pane .final-search-polygon,
+.dark .grayscale-map .leaflet-overlay-pane .final-search-polygon path {
+  stroke: #60a5fa !important; /* Lighter blue in dark mode */
+  stroke-width: 6px !important; /* Slightly thicker */
+  fill: #3b82f6 !important;
+  fill-opacity: 0.7 !important; /* More visible in dark */
+  filter: none !important;
+  -webkit-filter: none !important;
 }
 
 /* Override any grayscale effects specifically for polygons */
@@ -167,31 +202,100 @@
   -webkit-filter: none !important;
 }
 
-/* Force bright blue for all polygon elements */
-.grayscale-map path[stroke] {
+/* Force bright blue for all polygon elements and lines - MUST override grayscale */
+.grayscale-map path[stroke],
+.grayscale-map .leaflet-overlay-pane path[stroke],
+.grayscale-map .leaflet-overlay-pane svg path[stroke],
+.grayscale-map .leaflet-overlay-pane svg path,
+.grayscale-map .leaflet-overlay-pane svg polyline {
   stroke: #1e40af !important;
   stroke-width: 4px !important;
   stroke-opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
 }
 
-.grayscale-map path[fill] {
+/* Dark mode adjustments for polygon strokes and lines */
+.dark .grayscale-map path[stroke],
+.dark .grayscale-map .leaflet-overlay-pane path[stroke],
+.dark .grayscale-map .leaflet-overlay-pane svg path[stroke],
+.dark .grayscale-map .leaflet-overlay-pane svg path,
+.dark .grayscale-map .leaflet-overlay-pane svg polyline {
+  stroke: #60a5fa !important; /* Lighter blue in dark mode */
+  stroke-width: 5px !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
+.grayscale-map path[fill],
+.grayscale-map .leaflet-overlay-pane svg path[fill] {
   fill: #3b82f6 !important;
   fill-opacity: 0.5 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
+/* Dark mode adjustments for polygon fills */
+.dark .grayscale-map path[fill],
+.dark .grayscale-map .leaflet-overlay-pane svg path[fill] {
+  fill: #3b82f6 !important;
+  fill-opacity: 0.6 !important; /* More visible in dark */
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
 }
 
 /* Specific classes for drawing elements */
-.grayscale-map .drawing-polygon {
+.grayscale-map .drawing-polygon,
+.grayscale-map .drawing-polygon path,
+.grayscale-map .leaflet-overlay-pane .drawing-polygon,
+.grayscale-map .leaflet-overlay-pane .drawing-polygon path {
   stroke: #1e40af !important;
   stroke-width: 4px !important;
   stroke-opacity: 1 !important;
   fill: #3b82f6 !important;
   fill-opacity: 0.4 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
 }
 
-.grayscale-map .drawing-line {
+/* Dark mode adjustments for drawing polygon */
+.dark .grayscale-map .drawing-polygon,
+.dark .grayscale-map .drawing-polygon path,
+.dark .grayscale-map .leaflet-overlay-pane .drawing-polygon,
+.dark .grayscale-map .leaflet-overlay-pane .drawing-polygon path {
+  stroke: #60a5fa !important; /* Lighter blue in dark mode */
+  stroke-width: 5px !important;
+  fill: #3b82f6 !important;
+  fill-opacity: 0.5 !important; /* More visible in dark */
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Force blue color for drawing lines (polyline) */
+.grayscale-map .drawing-line,
+.grayscale-map .drawing-line path,
+.grayscale-map .leaflet-overlay-pane .drawing-line,
+.grayscale-map .leaflet-overlay-pane .drawing-line path {
   stroke: #1e40af !important;
   stroke-width: 4px !important;
   stroke-opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Dark mode adjustments for drawing line */
+.dark .grayscale-map .drawing-line,
+.dark .grayscale-map .drawing-line path,
+.dark .grayscale-map .leaflet-overlay-pane .drawing-line,
+.dark .grayscale-map .leaflet-overlay-pane .drawing-line path {
+  stroke: #60a5fa !important; /* Lighter blue in dark mode */
+  stroke-width: 5px !important;
+  filter: none !important;
+  -webkit-filter: none !important;
 }
 
 .grayscale-map .starting-point {
@@ -202,8 +306,43 @@
   fill-opacity: 0.8 !important;
 }
 
-/* Make sure blue colors override grayscale */
-.grayscale-map .leaflet-interactive path {
+/* Dark mode adjustments for starting point */
+.dark .grayscale-map .starting-point {
+  stroke: #60a5fa !important; /* Lighter blue in dark mode */
+  fill: #3b82f6 !important;
+  fill-opacity: 0.9 !important; /* More visible in dark */
+}
+
+/* ULTIMATE OVERRIDE: Make sure blue colors override grayscale - Target ALL possible selectors */
+.grayscale-map .leaflet-interactive path,
+.grayscale-map .leaflet-interactive,
+.grayscale-map .leaflet-overlay-pane,
+.grayscale-map .leaflet-overlay-pane *,
+.grayscale-map .leaflet-overlay-pane svg,
+.grayscale-map .leaflet-overlay-pane svg *,
+.grayscale-map .leaflet-overlay-pane svg path,
+.grayscale-map .leaflet-overlay-pane svg polyline,
+.grayscale-map .leaflet-overlay-pane svg circle,
+.grayscale-map .leaflet-overlay-pane svg ellipse {
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
+/* Force blue color on all polylines in grayscale map */
+.grayscale-map .leaflet-overlay-pane svg polyline,
+.grayscale-map .leaflet-overlay-pane svg polyline path {
+  stroke: #1e40af !important;
+  stroke-width: 4px !important;
+  stroke-opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+.dark .grayscale-map .leaflet-overlay-pane svg polyline,
+.dark .grayscale-map .leaflet-overlay-pane svg polyline path {
+  stroke: #60a5fa !important;
+  stroke-width: 5px !important;
   filter: none !important;
   -webkit-filter: none !important;
 }

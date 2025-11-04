@@ -3,12 +3,73 @@ import { CognitoUserPool, CognitoUser, AuthenticationDetails, CognitoUserAttribu
 // Check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined';
 
+// Helper function to get environment variables from static file or process.env
+function getStaticEnvVar(key: string, fallback: string = ''): string {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  // In development, prioritize process.env (from .env.local)
+  // In production/static builds, prioritize window.ENV
+  if (isDevelopment) {
+    // Development: process.env first (from .env.local)
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔧 [DEV] Using ${key} from process.env`);
+      }
+      return process.env[key];
+    }
+    
+    // Fallback to window.ENV in development
+    if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
+      console.log(`⚠️ [DEV] Using ${key} from window.ENV (fallback)`);
+      return window.ENV[key];
+    }
+  } else {
+    // Production/Static: window.ENV first
+    if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
+      return window.ENV[key];
+    }
+    
+    // Fallback to process.env
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      return process.env[key];
+    }
+  }
+  
+  return fallback;
+}
+
 // AWS Cognito configuration
 const getPoolData = () => {
-  // During build time or server-side, provide defaults to prevent errors
-  const userPoolId = process.env.AWS_USER_POOL_ID || 'us-east-2_Fpda5LMX0';
-  const clientId = process.env.AWS_POOL_CLIENT_ID || '5kvmdd29oj2lpnq9b4j60gfe69';
-  const region = process.env.AWS_REGION || 'us-east-2';
+  // Use NEXT_PUBLIC_ prefixed variables for client-side access
+  const userPoolId = getStaticEnvVar('NEXT_PUBLIC_AWS_USER_POOL_ID') || 
+                     getStaticEnvVar('AWS_USER_POOL_ID') || 
+                     'us-east-2_Fpda5LMX0';
+  const clientId = getStaticEnvVar('NEXT_PUBLIC_AWS_POOL_CLIENT_ID') || 
+                   getStaticEnvVar('AWS_POOL_CLIENT_ID') || 
+                   '5kvmdd29oj2lpnq9b4j60gfe69';
+  const region = getStaticEnvVar('NEXT_PUBLIC_AWS_REGION') || 
+                 getStaticEnvVar('AWS_REGION') || 
+                 'us-east-2';
+
+  // Log configuration in development for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔧 Cognito Configuration:', {
+      userPoolId: userPoolId.substring(0, 20) + '...',
+      clientId: clientId.substring(0, 10) + '...',
+      region,
+      source: 'Development mode - using .env.local',
+      fullUserPoolId: userPoolId,
+      fullClientId: clientId
+    });
+    
+    // Verify configuration
+    if (!userPoolId || userPoolId.includes('your_') || userPoolId.includes('tu_')) {
+      console.error('❌ Invalid User Pool ID:', userPoolId);
+    }
+    if (!clientId || clientId.includes('your_') || clientId.includes('tu_')) {
+      console.error('❌ Invalid Client ID:', clientId);
+    }
+  }
 
   return {
     UserPoolId: userPoolId,
@@ -199,8 +260,17 @@ export const authService = {
 
       try {
         console.log('🔍 Starting authentication process...');
+        console.log('🔍 Current URL:', typeof window !== 'undefined' ? window.location.href : 'N/A');
+        console.log('🔍 Environment:', process.env.NODE_ENV);
+        
         const pool = getUserPool();
+        const poolData = getPoolData();
         console.log('🔍 User pool obtained successfully');
+        console.log('🔍 Pool configuration:', {
+          UserPoolId: poolData.UserPoolId.substring(0, 20) + '...',
+          ClientId: poolData.ClientId.substring(0, 10) + '...',
+          Region: poolData.Region
+        });
         
         const authenticationDetails = new AuthenticationDetails({
           Username: email,
@@ -218,7 +288,7 @@ export const authService = {
         
         // Use ALLOW_USER_PASSWORD_AUTH flow by setting auth flow type
         cognitoUser.setAuthenticationFlowType('USER_PASSWORD_AUTH');
-        console.log('🔍 Authentication flow type set');
+        console.log('🔍 Authentication flow type set to USER_PASSWORD_AUTH');
         
         cognitoUser.authenticateUser(authenticationDetails, {
           onSuccess: (result) => {

@@ -220,16 +220,22 @@ export async function getDetailUnit(propertyId: string): Promise<DetailUnitRespo
 /**
  * Obtener estudio de mercado
  */
-export async function getMarketStudy(propertyId: string): Promise<MarketStudyResponse> {
+export async function getMarketStudy(propertyId: string, polygon?: string): Promise<MarketStudyResponse> {
   if (!propertyId) {
     throw new Error('Property ID is required');
   }
-  const inputvar = {
+  const inputvar: any = {
     barmanpre: propertyId,
     table: 'bogota_data_lotes_fastsearch',
     get_table: false,
     get_tabla_last_year: false
+  };
+  
+  // Add polygon if provided
+  if (polygon) {
+    inputvar.polygon = polygon;
   }
+  
   const endpoint = `${ENDPOINTS.GET_ESTUDIO_MERCADO}`;
   try {
     const response = await makeApiRequest<any>(endpoint, {
